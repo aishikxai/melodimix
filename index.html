@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spoptify - Premium Offline Music Player</title>
+  <title>Spoptify - Premium Spotify Replicant Music Player</title>
   <!-- SEO Meta Tags -->
   <meta name="description" content="A gorgeous, offline-first Spotify-like music player with real-time audio visualizers, dynamic synth beat generator, and local library support. No ads, no internet required.">
   <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231DB954'/><path d='M30 40 Q50 30 70 40 M25 50 Q50 40 75 50 M28 60 Q50 50 72 60' stroke='white' stroke-width='6' stroke-linecap='round' fill='none'/></svg>">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#120f1d">
+  <meta name="theme-color" content="#121212">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,194 +33,316 @@
     </div>
   </div>
 
-  <!-- Ambient glowing background blobs for premium visual depth -->
-  <div class="glow-bg">
-    <div class="blob blob1"></div>
-    <div class="blob blob2"></div>
-    <div class="blob blob3"></div>
-  </div>
-
   <div class="app-container">
-    <!-- SIDEBAR -->
+    <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
+      <!-- Logo -->
       <div class="logo">
         <svg viewBox="0 0 100 100" class="logo-icon">
           <circle cx="50" cy="50" r="45" fill="var(--accent-color)"/>
-          <path d="M30 38 Q50 28 70 38 M25 50 Q50 40 75 50 M28 62 Q50 52 72 62" stroke="#120f1d" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M30 38 Q50 28 70 38 M25 50 Q50 40 75 50 M28 62 Q50 52 72 62" stroke="#121212" stroke-width="6" stroke-linecap="round" fill="none"/>
         </svg>
         <span class="logo-text">Spoptify</span>
       </div>
 
-      <nav class="nav-menu">
-        <a href="#home" class="nav-item active" data-target="home-view">
-          <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <!-- Navigation Menu (Top Box) -->
+      <div class="sidebar-group">
+        <a href="#home" class="nav-item active" data-target="home-view" id="nav-home">
+          <svg viewBox="0 0 24 24" class="nav-icon"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
           <span>Home</span>
         </a>
-        <a href="#library" class="nav-item" data-target="library-view">
-          <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-          <span>Your Library</span>
+        <a href="#search" class="nav-item" data-target="search-view" id="nav-search">
+          <svg viewBox="0 0 24 24" class="nav-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <span>Search</span>
         </a>
-        <a href="#visualizer" class="nav-item" data-target="visualizer-view">
-          <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-          <span>Visualizer</span>
-        </a>
-        <a href="#equalizer" class="nav-item" data-target="equalizer-view">
-          <svg viewBox="0 0 24 24"><path d="M19 12h-2V3h2v9zm-4 9h-2V3h2v18zm-4-6H9V3h2v12zm-4 3H3V3h2v15z"/></svg>
-          <span>Equalizer</span>
-        </a>
-        <a href="#search" class="nav-item" data-target="search-view">
-          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <span>Search Online</span>
-        </a>
-        <a href="#settings" class="nav-item" data-target="settings-view">
-          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-          <span>Settings</span>
-        </a>
-      </nav>
+      </div>
 
-      <!-- Sidebar mini vinyl artwork playing status -->
-      <div class="sidebar-playback-card" id="sidebar-card">
-        <div class="vinyl-wrapper">
-          <div class="vinyl-record" id="sidebar-vinyl">
-            <div class="vinyl-center"></div>
+      <!-- Library Box -->
+      <div class="sidebar-group library-container">
+        <div class="library-header">
+          <div class="library-title-row">
+            <svg viewBox="0 0 24 24" class="library-icon"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+            <span>Your Library</span>
           </div>
+          <button class="btn-icon-only" id="create-playlist-btn" title="Create Playlist">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </button>
         </div>
-        <div class="card-info">
-          <h4 class="card-title truncate" id="sidebar-title">No Track Playing</h4>
-          <p class="card-artist truncate" id="sidebar-artist">Select a track</p>
+
+        <div class="library-items-list">
+          <!-- Liked Songs Playlist Item -->
+          <div class="sidebar-lib-item" id="sidebar-liked-songs" data-target="liked-songs-view">
+            <div class="liked-songs-avatar">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <div class="lib-item-info">
+              <span class="lib-item-title">Liked Songs</span>
+              <span class="lib-item-subtitle">Playlist • <span id="sidebar-liked-count">0</span> songs</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Playlists Render Area -->
+          <div id="sidebar-playlists-list"></div>
         </div>
       </div>
     </aside>
 
-    <!-- MAIN PANEL -->
+    <!-- CENTER VIEWPORT -->
     <main class="main-panel">
       <!-- HEADER -->
       <header class="main-header">
-        <div class="search-bar">
-          <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <input type="text" id="search-input" placeholder="Search offline tracks...">
+        <div class="header-left">
+          <div class="nav-arrows">
+            <button class="arrow-btn" title="Back"><svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg></button>
+            <button class="arrow-btn" title="Forward"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></button>
+          </div>
+
+          <!-- Search Bar (Only visible on Search View) -->
+          <div class="search-bar-wrapper" id="header-search-bar" style="display: none;">
+            <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="search-online-input" autocomplete="off" placeholder="What do you want to listen to?">
+            <div id="search-online-suggestions" class="search-suggestions-dropdown" style="display: none;"></div>
+          </div>
         </div>
-        <div class="header-actions">
-          <button id="header-install-btn" class="btn btn-primary" style="display: none; background: linear-gradient(135deg, #00e5ff 0%, var(--accent-color) 100%); color: #120f1d; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); border: none; margin-right: 8px;">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg> Install App
+
+        <div class="header-right">
+          <button id="header-install-btn" class="btn btn-primary install-btn" style="display: none;">
+            Install App
           </button>
           <span class="offline-badge">
             <span class="dot"></span> Offline Mode
           </span>
-          <button id="import-header-btn" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Import Audio
+          <button id="import-header-btn" class="btn btn-secondary import-btn">
+            <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Import
           </button>
+
+          <!-- Profile Menu Trigger -->
+          <div class="profile-menu-container">
+            <button class="profile-btn" id="profile-menu-trigger">
+              <div class="profile-avatar">U</div>
+              <span class="profile-name">User</span>
+              <svg viewBox="0 0 24 24" class="dropdown-arrow"><path d="M7 10l5 5 5-5z"/></svg>
+            </button>
+            <div class="profile-dropdown" id="profile-dropdown-menu" style="display: none;">
+              <button class="profile-dropdown-item" id="menu-equalizer">Equalizer</button>
+              <button class="profile-dropdown-item" id="menu-settings">Settings</button>
+              <hr class="dropdown-divider">
+              <button class="profile-dropdown-item" id="menu-lock">Lock Screen</button>
+            </div>
+          </div>
         </div>
       </header>
 
-      <!-- VIEW PANELS -->
+      <!-- VIEW PANELS CONTAINER -->
       <div class="view-content">
         <!-- 1. HOME VIEW -->
         <section id="home-view" class="view-panel active">
-          <div class="welcome-banner">
-            <div class="welcome-text">
-              <h1>Welcome to Spoptify</h1>
-              <p>Your beautiful, local, 100% ad-free desktop music deck. Runs completely offline.</p>
+          <h1 class="greeting-header" id="greeting-title">Good Day</h1>
+
+          <!-- Quick Access Playlist Cards Grid -->
+          <div class="quick-grid" id="quick-links-grid">
+            <!-- Populated by JS: Liked Songs, Synth Beats, Custom Playlists -->
+          </div>
+
+          <!-- Section: Procedural Beats -->
+          <div class="section-container">
+            <div class="section-header-row">
+              <h2 class="section-title">Built-in Synth Generators</h2>
             </div>
-            <div class="welcome-graphic">
-              <!-- Animated floating elements inside banner -->
-              <div class="pulse-ring"></div>
-              <div class="pulse-ring delay-1"></div>
+            <div class="tracks-grid" id="featured-tracks">
+              <!-- Demo Synth tracks populate here -->
             </div>
           </div>
 
+          <!-- Section: Custom Ambient Board -->
           <div class="section-container">
-            <h2 class="section-title">Out-Of-The-Box Ambient Generator</h2>
-            <p class="section-subtitle">No local files yet? Play this dynamically synthesized, AI-driven chill beat generated locally in your browser.</p>
-            <div class="synth-card">
-              <div class="synth-info">
-                <h3>Offline Lofi Beat Synthesizer</h3>
-                <p>Generates drums, chords, bass, and improvises a melody in real-time. 0 KB download.</p>
-                <div class="synth-controls">
-                  <div class="control-group">
-                    <label for="synth-tempo">Tempo (BPM)</label>
-                    <input type="range" id="synth-tempo" min="60" max="130" value="85" class="slider">
-                    <span id="synth-tempo-val">85 BPM</span>
+            <h2 class="section-title">Improvise Live Ambient</h2>
+            <div class="synth-custom-panel">
+              <div class="synth-custom-info">
+                <h3>Live Ambient procedural beat</h3>
+                <p>Configured dynamically. Plays drums, bass, synth pads, and leads fully offline.</p>
+                <div class="synth-custom-controls">
+                  <div class="slider-control-group">
+                    <label for="synth-tempo">Tempo: <span id="synth-tempo-val">85 BPM</span></label>
+                    <input type="range" id="synth-tempo" min="60" max="130" value="85" class="spotify-slider">
                   </div>
                 </div>
               </div>
-              <div class="synth-action">
-                <button id="play-synth-btn" class="btn btn-primary btn-large">
-                  <svg viewBox="0 0 24 24" class="btn-icon"><path d="M8 5v14l11-7z"/></svg> Generate Live Beats
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-container">
-            <h2 class="section-title">Built-in Tracks & Demo</h2>
-            <div class="tracks-grid" id="featured-tracks">
-              <!-- Demo tracks populate here -->
+              <button id="play-synth-btn" class="spotify-play-circle-btn large">
+                <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+                <svg viewBox="0 0 24 24" class="pause-icon" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
             </div>
           </div>
         </section>
 
-        <!-- 2. LIBRARY VIEW -->
-        <section id="library-view" class="view-panel">
-          <div class="library-header">
-            <div>
-              <h2>Local Offline Library</h2>
-              <p>Drag and drop your audio files below to save them directly to your browser storage.</p>
+        <!-- 2. SEARCH VIEW -->
+        <section id="search-view" class="view-panel">
+          <div class="search-loading" id="search-online-loading" style="display: none;">
+            <div class="spinner"></div> Searching tracks...
+          </div>
+
+          <!-- Default Categories & Recommendations -->
+          <div class="search-recommendations-container" id="search-recommendations">
+            <h2 class="section-title">Browse all</h2>
+            <div class="genre-grid">
+              <div class="genre-card gc-lofi" data-query="lofi chill">
+                <span>Lofi Chill</span>
+              </div>
+              <div class="genre-card gc-synth" data-query="synthwave retro">
+                <span>Synthwave</span>
+              </div>
+              <div class="genre-card gc-pop" data-query="pop hits">
+                <span>Pop Hits</span>
+              </div>
+              <div class="genre-card gc-rock" data-query="rock legends">
+                <span>Rock Classics</span>
+              </div>
+              <div class="genre-card gc-electronic" data-query="electronic dance">
+                <span>Electronic</span>
+              </div>
+              <div class="genre-card gc-acoustic" data-query="acoustic folk">
+                <span>Acoustic</span>
+              </div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 32px;">Popular Artists</h2>
+            <div class="artists-row">
+              <div class="artist-circle-card" data-query="Coldplay">
+                <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music/v4/a2/2a/fb/a22afbde-386f-236b-e3c6-eb969ff7406a/source/150x150bb.jpg');"></div>
+                <span>Coldplay</span>
+              </div>
+              <div class="artist-circle-card" data-query="Taylor Swift">
+                <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music115/v4/bd/d2/88/bdd288b8-0720-7b24-fc26-dfa75eb2c7f5/source/150x150bb.jpg');"></div>
+                <span>Taylor Swift</span>
+              </div>
+              <div class="artist-circle-card" data-query="Billie Eilish">
+                <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music112/v4/0d/17/8d/0d178db4-d6f7-c5cc-3069-b5d1e6c38234/source/150x150bb.jpg');"></div>
+                <span>Billie Eilish</span>
+              </div>
+              <div class="artist-circle-card" data-query="Daft Punk">
+                <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music/v4/bd/1a/05/bd1a052e-503a-3453-61e8-71e99cd1bb4c/source/150x150bb.jpg');"></div>
+                <span>Daft Punk</span>
+              </div>
+              <div class="artist-circle-card" data-query="Eminem">
+                <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music115/v4/08/94/a3/0894a32a-d9df-2521-8319-450f75b2df50/source/150x150bb.jpg');"></div>
+                <span>Eminem</span>
+              </div>
             </div>
           </div>
 
-          <!-- Drag and drop zone -->
-          <div id="drop-zone" class="drop-zone">
-            <input type="file" id="file-input" multiple accept="audio/*" class="file-input-hidden">
-            <svg viewBox="0 0 24 24" class="upload-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-            <h3>Drag & Drop MP3 / WAV files here</h3>
-            <p>or <span>browse files</span> from your computer</p>
-            <span class="file-limits">Supported: MP3, WAV, FLAC, M4A, OGG</span>
+          <!-- Search Results Grid -->
+          <div class="search-results-grid" id="search-online-results" style="display: none;"></div>
+        </section>
+
+        <!-- 3. PLAYLIST DETAIL VIEW -->
+        <section id="playlist-view" class="view-panel">
+          <!-- Banner Header -->
+          <div class="playlist-detail-header" id="playlist-header">
+            <div class="playlist-cover-wrapper">
+              <div class="playlist-big-cover" id="playlist-detail-cover">
+                <svg viewBox="0 0 24 24" class="default-playlist-svg"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+              </div>
+            </div>
+            <div class="playlist-header-meta">
+              <span class="meta-tag">PLAYLIST</span>
+              <h1 class="playlist-title-display" id="playlist-detail-title">My Playlist</h1>
+              <div class="meta-owner-row">
+                <span class="owner-name">Spoptify User</span> • 
+                <span id="playlist-detail-count">0 songs</span>, 
+                <span class="total-duration" id="playlist-detail-duration">0 min</span>
+              </div>
+            </div>
           </div>
 
-          <div class="library-tracklist-container">
-            <table class="tracklist-table">
+          <!-- Controls panel below header -->
+          <div class="playlist-controls-row">
+            <button class="spotify-play-circle-btn large" id="playlist-play-btn" title="Play playlist">
+              <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" class="pause-icon" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="btn btn-secondary btn-danger-border" id="delete-playlist-btn">Delete Playlist</button>
+          </div>
+
+          <!-- Playlist Songs Table -->
+          <div class="playlist-tracklist-container">
+            <table class="playlist-table">
               <thead>
                 <tr>
                   <th style="width: 5%">#</th>
-                  <th style="width: 45%">Title</th>
+                  <th style="width: 50%">Title</th>
                   <th style="width: 30%">Artist</th>
                   <th style="width: 10%">Duration</th>
-                  <th style="width: 10%">Action</th>
+                  <th style="width: 5%"></th>
                 </tr>
               </thead>
-              <tbody id="library-tracks-body">
-                <!-- Dynamically populated rows from IndexedDB -->
-                <tr class="empty-state">
-                  <td colspan="5">
-                    <p>No tracks in your library yet. Drop some audio files above to get started!</p>
-                  </td>
+              <tbody id="playlist-tracks-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Playlist Footer: Find more songs search -->
+          <hr class="playlist-divider">
+          <div class="playlist-add-section">
+            <h3>Let's add some songs to your playlist</h3>
+            <div class="playlist-search-box">
+              <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" id="playlist-add-search-input" placeholder="Search for songs...">
+            </div>
+            <div class="playlist-search-results-list" id="playlist-add-search-results">
+              <!-- Dynamically shows matching songs that can be added -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. LIKED SONGS VIEW -->
+        <section id="liked-songs-view" class="view-panel">
+          <!-- Liked Songs Header -->
+          <div class="playlist-detail-header liked-songs-bg">
+            <div class="playlist-cover-wrapper">
+              <div class="liked-songs-big-avatar">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              </div>
+            </div>
+            <div class="playlist-header-meta">
+              <span class="meta-tag">PLAYLIST</span>
+              <h1 class="playlist-title-display">Liked Songs</h1>
+              <div class="meta-owner-row">
+                <span class="owner-name">Spoptify User</span> • 
+                <span id="liked-detail-count">0 songs</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="playlist-controls-row">
+            <button class="spotify-play-circle-btn large" id="liked-songs-play-btn" title="Play Liked Songs">
+              <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" class="pause-icon" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+          </div>
+
+          <!-- Liked Songs Table -->
+          <div class="playlist-tracklist-container">
+            <table class="playlist-table">
+              <thead>
+                <tr>
+                  <th style="width: 5%">#</th>
+                  <th style="width: 50%">Title</th>
+                  <th style="width: 30%">Artist</th>
+                  <th style="width: 10%">Duration</th>
+                  <th style="width: 5%"></th>
                 </tr>
+              </thead>
+              <tbody id="liked-tracks-body">
+                <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
         </section>
 
-        <!-- 3. VISUALIZER VIEW -->
-        <section id="visualizer-view" class="view-panel">
-          <div class="visualizer-settings-overlay">
-            <div class="select-group">
-              <label for="vis-style">Effect Mode</label>
-              <select id="vis-style" class="custom-select">
-                <option value="circular">Circular Portal</option>
-                <option value="bars">Neon Equalizer Bars</option>
-                <option value="wave">Oscilloscope Wave</option>
-                <option value="particles">Floating Constellations</option>
-              </select>
-            </div>
-            <div class="vis-info" id="vis-now-playing">Playing: None</div>
-          </div>
-          <div class="visualizer-canvas-container">
-            <canvas id="visualizer-canvas"></canvas>
-          </div>
-        </section>
-
-        <!-- 4. EQUALIZER VIEW -->
+        <!-- 5. EQUALIZER VIEW -->
         <section id="equalizer-view" class="view-panel">
           <div class="eq-header">
             <h2>Audio Equalizer</h2>
@@ -284,7 +406,7 @@
           </div>
         </section>
 
-        <!-- 5. SETTINGS VIEW -->
+        <!-- 6. SETTINGS VIEW -->
         <section id="settings-view" class="view-panel">
           <h2>App Settings</h2>
           <p>Personalize your local player themes, clear storage, and explore features.</p>
@@ -317,7 +439,7 @@
 
           <div class="settings-group">
             <h3>Guest Access Settings</h3>
-            <p>Copy the invite link below and share it with another person to grant them unlimited access to this player. You can customize the access code directly in the codebase files.</p>
+            <p>Copy the invite link below and share it with another person to grant them unlimited access to this player.</p>
             <div class="info-card">
               <div style="margin-bottom: 10px;">
                 Current Access Code: <strong style="color: var(--accent-color);" id="settings-access-code">spoptify2026</strong>
@@ -347,96 +469,44 @@
             <p>Spoptify is a 100% client-side, offline Progressive Web App. All files and synthesis logic are processed fully in your web browser. Absolutely no user data, telemetry, or audio files are ever uploaded or shared. Safe, ad-free, and always available offline.</p>
           </div>
         </section>
-
-        <!-- 6. SEARCH ONLINE VIEW -->
-        <section id="search-view" class="view-panel">
-          <div class="search-online-header">
-            <h2>Search &amp; Import Online</h2>
-            <p>Search millions of tracks via iTunes, stream previews, and download them directly to your offline library.</p>
-          </div>
-          
-          <div class="search-online-input-wrapper">
-            <div class="search-online-relative-box">
-              <input type="text" id="search-online-input" autocomplete="off" placeholder="Search track title, artist, or album...">
-              <div id="search-online-suggestions" class="search-suggestions-dropdown" style="display: none;"></div>
-            </div>
-            <button id="search-online-btn" class="btn btn-primary">Search</button>
-          </div>
-
-          <div class="search-loading" id="search-online-loading" style="display: none;">
-            <div class="spinner"></div> Searching tracks...
-          </div>
-
-          <!-- Main search results or recommendation content -->
-          <div class="search-results-container" id="search-online-container">
-            <!-- Default Recommended View -->
-            <div class="recommendations-deck" id="search-recommendations">
-              <div class="recommendations-section">
-                <h3 class="rec-title">Recommended Genres</h3>
-                <div class="genre-grid">
-                  <div class="genre-card gc-lofi" data-query="lofi chill">
-                    <span>Lofi Chill</span>
-                  </div>
-                  <div class="genre-card gc-synth" data-query="synthwave retro">
-                    <span>Synthwave</span>
-                  </div>
-                  <div class="genre-card gc-pop" data-query="pop hits">
-                    <span>Pop Hits</span>
-                  </div>
-                  <div class="genre-card gc-rock" data-query="rock legends">
-                    <span>Rock Classics</span>
-                  </div>
-                  <div class="genre-card gc-electronic" data-query="electronic dance">
-                    <span>Electronic</span>
-                  </div>
-                  <div class="genre-card gc-acoustic" data-query="acoustic folk">
-                    <span>Acoustic</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="recommendations-section">
-                <h3 class="rec-title">Trending Artists</h3>
-                <div class="artists-row">
-                  <div class="artist-circle-card" data-query="Coldplay">
-                    <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music/v4/a2/2a/fb/a22afbde-386f-236b-e3c6-eb969ff7406a/source/150x150bb.jpg');"></div>
-                    <span>Coldplay</span>
-                  </div>
-                  <div class="artist-circle-card" data-query="Taylor Swift">
-                    <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music115/v4/bd/d2/88/bdd288b8-0720-7b24-fc26-dfa75eb2c7f5/source/150x150bb.jpg');"></div>
-                    <span>Taylor Swift</span>
-                  </div>
-                  <div class="artist-circle-card" data-query="Billie Eilish">
-                    <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music112/v4/0d/17/8d/0d178db4-d6f7-c5cc-3069-b5d1e6c38234/source/150x150bb.jpg');"></div>
-                    <span>Billie Eilish</span>
-                  </div>
-                  <div class="artist-circle-card" data-query="Daft Punk">
-                    <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music/v4/bd/1a/05/bd1a052e-503a-3453-61e8-71e99cd1bb4c/source/150x150bb.jpg');"></div>
-                    <span>Daft Punk</span>
-                  </div>
-                  <div class="artist-circle-card" data-query="Eminem">
-                    <div class="artist-avatar" style="background-image: url('https://audio-ssl.itunes.apple.com/itunes-assets/Music115/v4/08/94/a3/0894a32a-d9df-2521-8319-450f75b2df50/source/150x150bb.jpg');"></div>
-                    <span>Eminem</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Grid wrapper for actual search results (initially hidden or empty) -->
-            <div class="search-results-grid" id="search-online-results" style="display: none;"></div>
-          </div>
-        </section>
       </div>
     </main>
+
+    <!-- RIGHT COLLAPSIBLE PANEL (NOW PLAYING & QUEUE) -->
+    <aside class="right-panel collapsed" id="right-now-playing-panel">
+      <div class="right-panel-header">
+        <h3>Now Playing</h3>
+        <button class="btn-icon-only close-panel-btn" id="close-right-panel-btn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="right-panel-scroll">
+        <div class="right-panel-cover-wrapper">
+          <img src="" id="right-panel-cover" class="right-panel-cover-img" alt="Track Art">
+        </div>
+        <div class="right-panel-track-details">
+          <h4 id="right-panel-title">No Track Playing</h4>
+          <p id="right-panel-artist">Select a track</p>
+        </div>
+        
+        <hr class="right-panel-divider">
+        
+        <div class="right-panel-queue">
+          <h4 class="queue-heading">Next Up</h4>
+          <div class="right-panel-queue-list" id="right-panel-queue-container">
+            <!-- Dynamic Queue Elements -->
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <!-- PLAYBAR CONTROLS (BOTTOM PANEL) -->
   <footer class="playbar">
-    <!-- Left: Album Info -->
-    <div class="playbar-left" id="playbar-expand-trigger">
-      <div class="playbar-art-wrapper">
+    <!-- Left: Album Info + Like Button -->
+    <div class="playbar-left">
+      <div class="playbar-art-wrapper" id="playbar-expand-trigger">
         <div class="playbar-art" id="playbar-cover">
-          <!-- Small vinyl rotation or placeholder -->
           <div class="vinyl-center-dot"></div>
         </div>
       </div>
@@ -444,6 +514,10 @@
         <div class="playbar-title truncate" id="playbar-title">No Track Playing</div>
         <div class="playbar-artist truncate" id="playbar-artist">Select a track to start listening</div>
       </div>
+      <button class="btn-icon-only heart-btn" id="playbar-heart-btn" title="Like track">
+        <svg viewBox="0 0 24 24" class="heart-empty"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
+        <svg viewBox="0 0 24 24" class="heart-filled" style="display: none;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </button>
     </div>
 
     <!-- Center: Playback Controls -->
@@ -455,7 +529,7 @@
         <button id="ctrl-prev" class="ctrl-btn" title="Previous">
           <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
-        <button id="ctrl-play-pause" class="ctrl-btn play-btn" title="Play">
+        <button id="ctrl-play-pause" class="ctrl-btn play-btn-circle" title="Play">
           <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
           <svg viewBox="0 0 24 24" class="pause-icon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
@@ -481,8 +555,8 @@
 
     <!-- Right: Utility Controls (Volume, EQ shortcut, Visualizer fullscreen) -->
     <div class="playbar-right">
-      <button id="playbar-vis-btn" class="ctrl-btn" title="Toggle Visualizer Screen">
-        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <button id="playbar-queue-btn" class="ctrl-btn" title="Now Playing View / Queue">
+        <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
       </button>
       <button id="playbar-eq-btn" class="ctrl-btn" title="Audio Equalizer">
         <svg viewBox="0 0 24 24"><path d="M19 12h-2V3h2v9zm-4 9h-2V3h2v18zm-4-6H9V3h2v12zm-4 3H3V3h2v15z"/></svg>
@@ -502,78 +576,24 @@
     </div>
   </footer>
 
-  <!-- FULLSCREEN INTEGRATED DECK DRAWER -->
-  <div class="fullscreen-overlay" id="fullscreen-player">
-    <button class="fullscreen-close" id="fullscreen-close-btn">
-      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-    </button>
-    
-    <!-- Immersive Visualizer behind vinyl deck -->
-    <canvas id="fullscreen-bg-canvas"></canvas>
-
-    <div class="fullscreen-content-grid">
-      <!-- Left side: Rotating giant Vinyl Record -->
-      <div class="fullscreen-deck-area">
-        <div class="vinyl-record-large" id="large-vinyl">
-          <div class="vinyl-large-label">
-            <div class="vinyl-large-center-dot"></div>
-          </div>
-        </div>
+  <!-- CREATE PLAYLIST MODAL -->
+  <div class="modal-overlay" id="create-playlist-modal" style="display: none;">
+    <div class="modal-box">
+      <h3>Create Playlist</h3>
+      <p>Give your playlist a beautiful name.</p>
+      <input type="text" id="new-playlist-name-input" placeholder="My Playlist #1" maxlength="32">
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="modal-create-btn">Create</button>
       </div>
+    </div>
+  </div>
 
-      <!-- Right side: Track Info + Equalizer or Queue view -->
-      <div class="fullscreen-control-area">
-        <div class="track-meta">
-          <h1 class="track-title-large" id="large-title">No Track Playing</h1>
-          <p class="track-artist-large" id="large-artist">Select a track to enjoy high-fidelity sound</p>
-        </div>
-
-        <div class="floating-equalizer-preview">
-          <!-- Tiny live sound wave bars -->
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
-        </div>
-
-        <div class="deck-controls-container">
-          <!-- Repetition of progress and playback controls in large format -->
-          <div class="progress-bar-container large-bar">
-            <span class="progress-time" id="large-progress-current">0:00</span>
-            <div class="progress-slider-wrapper" id="large-progress-bar">
-              <div class="progress-slider-track">
-                <div class="progress-slider-fill" id="large-progress-fill"></div>
-                <div class="progress-slider-thumb" id="large-progress-thumb"></div>
-              </div>
-            </div>
-            <span class="progress-time" id="large-progress-duration">0:00</span>
-          </div>
-
-          <div class="player-controls large-controls">
-            <button id="large-ctrl-shuffle" class="ctrl-btn" title="Shuffle">
-              <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-            </button>
-            <button id="large-ctrl-prev" class="ctrl-btn" title="Previous">
-              <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-            </button>
-            <button id="large-ctrl-play-pause" class="ctrl-btn play-btn large-play-btn" title="Play">
-              <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
-              <svg viewBox="0 0 24 24" class="pause-icon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            </button>
-            <button id="large-ctrl-next" class="ctrl-btn" title="Next">
-              <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-            </button>
-            <button id="large-ctrl-repeat" class="ctrl-btn" title="Repeat">
-              <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-              <span class="repeat-one-indicator" style="display: none;">1</span>
-            </button>
-          </div>
-        </div>
-      </div>
+  <!-- ADD TO PLAYLIST CONTEXT DROPDOWN MENU -->
+  <div class="playlist-select-menu" id="add-to-playlist-menu" style="display: none;">
+    <div class="menu-header">Add to Playlist</div>
+    <div class="menu-items" id="playlist-menu-options-container">
+      <!-- Options render here dynamically -->
     </div>
   </div>
 
