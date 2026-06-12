@@ -1,0 +1,15 @@
+# Local OS files
+.DS_Store
+Thumbs.db
+
+# IDE config files
+.idea/
+.vscode/
+
+# Local temporary or log files
+*.log
+npm-debug.log*
+
+# Node packages (if any installed locally)
+node_modules/
+package-lock.json

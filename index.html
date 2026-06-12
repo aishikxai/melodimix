@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spoptify - Premium Offline Music Player</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="A gorgeous, offline-first Spotify-like music player with real-time audio visualizers, dynamic synth beat generator, and local library support. No ads, no internet required.">
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231DB954'/><path d='M30 40 Q50 30 70 40 M25 50 Q50 40 75 50 M28 60 Q50 50 72 60' stroke='white' stroke-width='6' stroke-linecap='round' fill='none'/></svg>">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#120f1d">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Ambient glowing background blobs for premium visual depth -->
+  <div class="glow-bg">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <svg viewBox="0 0 100 100" class="logo-icon">
+          <circle cx="50" cy="50" r="45" fill="var(--accent-color)"/>
+          <path d="M30 38 Q50 28 70 38 M25 50 Q50 40 75 50 M28 62 Q50 52 72 62" stroke="#120f1d" stroke-width="6" stroke-linecap="round" fill="none"/>
+        </svg>
+        <span class="logo-text">Spoptify</span>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#home" class="nav-item active" data-target="home-view">
+          <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="#library" class="nav-item" data-target="library-view">
+          <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          <span>Your Library</span>
+        </a>
+        <a href="#visualizer" class="nav-item" data-target="visualizer-view">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          <span>Visualizer</span>
+        </a>
+        <a href="#equalizer" class="nav-item" data-target="equalizer-view">
+          <svg viewBox="0 0 24 24"><path d="M19 12h-2V3h2v9zm-4 9h-2V3h2v18zm-4-6H9V3h2v12zm-4 3H3V3h2v15z"/></svg>
+          <span>Equalizer</span>
+        </a>
+        <a href="#settings" class="nav-item" data-target="settings-view">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar mini vinyl artwork playing status -->
+      <div class="sidebar-playback-card" id="sidebar-card">
+        <div class="vinyl-wrapper">
+          <div class="vinyl-record" id="sidebar-vinyl">
+            <div class="vinyl-center"></div>
+          </div>
+        </div>
+        <div class="card-info">
+          <h4 class="card-title truncate" id="sidebar-title">No Track Playing</h4>
+          <p class="card-artist truncate" id="sidebar-artist">Select a track</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN PANEL -->
+    <main class="main-panel">
+      <!-- HEADER -->
+      <header class="main-header">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" class="search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="search-input" placeholder="Search offline tracks...">
+        </div>
+        <div class="header-actions">
+          <span class="offline-badge">
+            <span class="dot"></span> Offline Mode
+          </span>
+          <button id="import-header-btn" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;margin-right:6px;"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Import Audio
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEW PANELS -->
+      <div class="view-content">
+        <!-- 1. HOME VIEW -->
+        <section id="home-view" class="view-panel active">
+          <div class="welcome-banner">
+            <div class="welcome-text">
+              <h1>Welcome to Spoptify</h1>
+              <p>Your beautiful, local, 100% ad-free desktop music deck. Runs completely offline.</p>
+            </div>
+            <div class="welcome-graphic">
+              <!-- Animated floating elements inside banner -->
+              <div class="pulse-ring"></div>
+              <div class="pulse-ring delay-1"></div>
+            </div>
+          </div>
+
+          <div class="section-container">
+            <h2 class="section-title">Out-Of-The-Box Ambient Generator</h2>
+            <p class="section-subtitle">No local files yet? Play this dynamically synthesized, AI-driven chill beat generated locally in your browser.</p>
+            <div class="synth-card">
+              <div class="synth-info">
+                <h3>Offline Lofi Beat Synthesizer</h3>
+                <p>Generates drums, chords, bass, and improvises a melody in real-time. 0 KB download.</p>
+                <div class="synth-controls">
+                  <div class="control-group">
+                    <label for="synth-tempo">Tempo (BPM)</label>
+                    <input type="range" id="synth-tempo" min="60" max="130" value="85" class="slider">
+                    <span id="synth-tempo-val">85 BPM</span>
+                  </div>
+                </div>
+              </div>
+              <div class="synth-action">
+                <button id="play-synth-btn" class="btn btn-primary btn-large">
+                  <svg viewBox="0 0 24 24" class="btn-icon"><path d="M8 5v14l11-7z"/></svg> Generate Live Beats
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-container">
+            <h2 class="section-title">Built-in Tracks & Demo</h2>
+            <div class="tracks-grid" id="featured-tracks">
+              <!-- Demo tracks populate here -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. LIBRARY VIEW -->
+        <section id="library-view" class="view-panel">
+          <div class="library-header">
+            <div>
+              <h2>Local Offline Library</h2>
+              <p>Drag and drop your audio files below to save them directly to your browser storage.</p>
+            </div>
+          </div>
+
+          <!-- Drag and drop zone -->
+          <div id="drop-zone" class="drop-zone">
+            <input type="file" id="file-input" multiple accept="audio/*" class="file-input-hidden">
+            <svg viewBox="0 0 24 24" class="upload-icon"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+            <h3>Drag & Drop MP3 / WAV files here</h3>
+            <p>or <span>browse files</span> from your computer</p>
+            <span class="file-limits">Supported: MP3, WAV, FLAC, M4A, OGG</span>
+          </div>
+
+          <div class="library-tracklist-container">
+            <table class="tracklist-table">
+              <thead>
+                <tr>
+                  <th style="width: 5%">#</th>
+                  <th style="width: 45%">Title</th>
+                  <th style="width: 30%">Artist</th>
+                  <th style="width: 10%">Duration</th>
+                  <th style="width: 10%">Action</th>
+                </tr>
+              </thead>
+              <tbody id="library-tracks-body">
+                <!-- Dynamically populated rows from IndexedDB -->
+                <tr class="empty-state">
+                  <td colspan="5">
+                    <p>No tracks in your library yet. Drop some audio files above to get started!</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 3. VISUALIZER VIEW -->
+        <section id="visualizer-view" class="view-panel">
+          <div class="visualizer-settings-overlay">
+            <div class="select-group">
+              <label for="vis-style">Effect Mode</label>
+              <select id="vis-style" class="custom-select">
+                <option value="circular">Circular Portal</option>
+                <option value="bars">Neon Equalizer Bars</option>
+                <option value="wave">Oscilloscope Wave</option>
+                <option value="particles">Floating Constellations</option>
+              </select>
+            </div>
+            <div class="vis-info" id="vis-now-playing">Playing: None</div>
+          </div>
+          <div class="visualizer-canvas-container">
+            <canvas id="visualizer-canvas"></canvas>
+          </div>
+        </section>
+
+        <!-- 4. EQUALIZER VIEW -->
+        <section id="equalizer-view" class="view-panel">
+          <div class="eq-header">
+            <h2>Audio Equalizer</h2>
+            <p>Shape the sound output using our 5-band parametric filters, or choose preset configurations.</p>
+          </div>
+
+          <div class="eq-presets-container">
+            <button class="eq-preset-btn active" data-preset="flat">Flat</button>
+            <button class="eq-preset-btn" data-preset="pop">Pop</button>
+            <button class="eq-preset-btn" data-preset="rock">Rock</button>
+            <button class="eq-preset-btn" data-preset="bass">Bass Boost</button>
+            <button class="eq-preset-btn" data-preset="vocal">Vocal</button>
+            <button class="eq-preset-btn" data-preset="electronic">Electronic</button>
+          </div>
+
+          <div class="equalizer-deck">
+            <div class="eq-slider-wrapper">
+              <div class="eq-slider-track-container">
+                <input type="range" class="eq-slider" orient="vertical" min="-12" max="12" step="1" value="0" data-band="0">
+              </div>
+              <span class="eq-val" id="eq-val-0">0dB</span>
+              <span class="eq-label">60Hz</span>
+              <span class="eq-desc">Bass</span>
+            </div>
+
+            <div class="eq-slider-wrapper">
+              <div class="eq-slider-track-container">
+                <input type="range" class="eq-slider" orient="vertical" min="-12" max="12" step="1" value="0" data-band="1">
+              </div>
+              <span class="eq-val" id="eq-val-1">0dB</span>
+              <span class="eq-label">250Hz</span>
+              <span class="eq-desc">Low-Mid</span>
+            </div>
+
+            <div class="eq-slider-wrapper">
+              <div class="eq-slider-track-container">
+                <input type="range" class="eq-slider" orient="vertical" min="-12" max="12" step="1" value="0" data-band="2">
+              </div>
+              <span class="eq-val" id="eq-val-2">0dB</span>
+              <span class="eq-label">1kHz</span>
+              <span class="eq-desc">Mid</span>
+            </div>
+
+            <div class="eq-slider-wrapper">
+              <div class="eq-slider-track-container">
+                <input type="range" class="eq-slider" orient="vertical" min="-12" max="12" step="1" value="0" data-band="3">
+              </div>
+              <span class="eq-val" id="eq-val-3">0dB</span>
+              <span class="eq-label">4kHz</span>
+              <span class="eq-desc">High-Mid</span>
+            </div>
+
+            <div class="eq-slider-wrapper">
+              <div class="eq-slider-track-container">
+                <input type="range" class="eq-slider" orient="vertical" min="-12" max="12" step="1" value="0" data-band="4">
+              </div>
+              <span class="eq-val" id="eq-val-4">0dB</span>
+              <span class="eq-label">16kHz</span>
+              <span class="eq-desc">Treble</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. SETTINGS VIEW -->
+        <section id="settings-view" class="view-panel">
+          <h2>App Settings</h2>
+          <p>Personalize your local player themes, clear storage, and explore features.</p>
+          
+          <hr class="settings-divider">
+
+          <div class="settings-group">
+            <h3>Accent Theme Color</h3>
+            <p>Select the color highlight used across player items, buttons, and visualizers.</p>
+            <div class="color-presets">
+              <button class="color-preset-btn active" data-color="#1db954" style="background-color: #1db954;"></button>
+              <button class="color-preset-btn" data-color="#ff007f" style="background-color: #ff007f;"></button>
+              <button class="color-preset-btn" data-color="#00ffff" style="background-color: #00ffff;"></button>
+              <button class="color-preset-btn" data-color="#8a2be2" style="background-color: #8a2be2;"></button>
+              <button class="color-preset-btn" data-color="#ff8c00" style="background-color: #ff8c00;"></button>
+              <button class="color-preset-btn" data-color="#ff0000" style="background-color: #ff0000;"></button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Local Storage Info</h3>
+            <p>Your library is stored locally on this machine within IndexedDB browser storage.</p>
+            <div class="info-card">
+              <div id="storage-info">Checking storage details...</div>
+              <button id="clear-db-btn" class="btn btn-danger btn-small" style="margin-top: 10px;">
+                Clear Local Music Database
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>About Spoptify</h3>
+            <p>Spoptify is a 100% client-side, offline Progressive Web App. All files and synthesis logic are processed fully in your web browser. Absolutely no user data, telemetry, or audio files are ever uploaded or shared. Safe, ad-free, and always available offline.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- PLAYBAR CONTROLS (BOTTOM PANEL) -->
+  <footer class="playbar">
+    <!-- Left: Album Info -->
+    <div class="playbar-left" id="playbar-expand-trigger">
+      <div class="playbar-art-wrapper">
+        <div class="playbar-art" id="playbar-cover">
+          <!-- Small vinyl rotation or placeholder -->
+          <div class="vinyl-center-dot"></div>
+        </div>
+      </div>
+      <div class="playbar-info">
+        <div class="playbar-title truncate" id="playbar-title">No Track Playing</div>
+        <div class="playbar-artist truncate" id="playbar-artist">Select a track to start listening</div>
+      </div>
+    </div>
+
+    <!-- Center: Playback Controls -->
+    <div class="playbar-center">
+      <div class="player-controls">
+        <button id="ctrl-shuffle" class="ctrl-btn" title="Shuffle">
+          <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button id="ctrl-prev" class="ctrl-btn" title="Previous">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button id="ctrl-play-pause" class="ctrl-btn play-btn" title="Play">
+          <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+          <svg viewBox="0 0 24 24" class="pause-icon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button id="ctrl-next" class="ctrl-btn" title="Next">
+          <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button id="ctrl-repeat" class="ctrl-btn" title="Repeat">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+          <span class="repeat-one-indicator" style="display: none;">1</span>
+        </button>
+      </div>
+      <div class="progress-bar-container">
+        <span class="progress-time" id="progress-current">0:00</span>
+        <div class="progress-slider-wrapper" id="progress-bar">
+          <div class="progress-slider-track">
+            <div class="progress-slider-fill" id="progress-fill"></div>
+            <div class="progress-slider-thumb" id="progress-thumb"></div>
+          </div>
+        </div>
+        <span class="progress-time" id="progress-duration">0:00</span>
+      </div>
+    </div>
+
+    <!-- Right: Utility Controls (Volume, EQ shortcut, Visualizer fullscreen) -->
+    <div class="playbar-right">
+      <button id="playbar-vis-btn" class="ctrl-btn" title="Toggle Visualizer Screen">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      </button>
+      <button id="playbar-eq-btn" class="ctrl-btn" title="Audio Equalizer">
+        <svg viewBox="0 0 24 24"><path d="M19 12h-2V3h2v9zm-4 9h-2V3h2v18zm-4-6H9V3h2v12zm-4 3H3V3h2v15z"/></svg>
+      </button>
+      <div class="volume-container">
+        <button id="volume-btn" class="ctrl-btn">
+          <svg viewBox="0 0 24 24" class="vol-high"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <svg viewBox="0 0 24 24" class="vol-mute" style="display:none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        </button>
+        <div class="volume-slider-wrapper" id="volume-slider">
+          <div class="volume-slider-track">
+            <div class="volume-slider-fill" id="volume-fill"></div>
+            <div class="volume-slider-thumb" id="volume-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- FULLSCREEN INTEGRATED DECK DRAWER -->
+  <div class="fullscreen-overlay" id="fullscreen-player">
+    <button class="fullscreen-close" id="fullscreen-close-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+    
+    <!-- Immersive Visualizer behind vinyl deck -->
+    <canvas id="fullscreen-bg-canvas"></canvas>
+
+    <div class="fullscreen-content-grid">
+      <!-- Left side: Rotating giant Vinyl Record -->
+      <div class="fullscreen-deck-area">
+        <div class="vinyl-record-large" id="large-vinyl">
+          <div class="vinyl-large-label">
+            <div class="vinyl-large-center-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: Track Info + Equalizer or Queue view -->
+      <div class="fullscreen-control-area">
+        <div class="track-meta">
+          <h1 class="track-title-large" id="large-title">No Track Playing</h1>
+          <p class="track-artist-large" id="large-artist">Select a track to enjoy high-fidelity sound</p>
+        </div>
+
+        <div class="floating-equalizer-preview">
+          <!-- Tiny live sound wave bars -->
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+
+        <div class="deck-controls-container">
+          <!-- Repetition of progress and playback controls in large format -->
+          <div class="progress-bar-container large-bar">
+            <span class="progress-time" id="large-progress-current">0:00</span>
+            <div class="progress-slider-wrapper" id="large-progress-bar">
+              <div class="progress-slider-track">
+                <div class="progress-slider-fill" id="large-progress-fill"></div>
+                <div class="progress-slider-thumb" id="large-progress-thumb"></div>
+              </div>
+            </div>
+            <span class="progress-time" id="large-progress-duration">0:00</span>
+          </div>
+
+          <div class="player-controls large-controls">
+            <button id="large-ctrl-shuffle" class="ctrl-btn" title="Shuffle">
+              <svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+            </button>
+            <button id="large-ctrl-prev" class="ctrl-btn" title="Previous">
+              <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button id="large-ctrl-play-pause" class="ctrl-btn play-btn large-play-btn" title="Play">
+              <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" class="pause-icon" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button id="large-ctrl-next" class="ctrl-btn" title="Next">
+              <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+            <button id="large-ctrl-repeat" class="ctrl-btn" title="Repeat">
+              <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+              <span class="repeat-one-indicator" style="display: none;">1</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main script orchestrator -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
