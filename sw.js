@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spoptify-cache-v3';
+const CACHE_NAME = 'spoptify-cache-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -43,7 +43,6 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event - intercept request and return from cache first, then network
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and skip browser extensions or chrome-extension schemes
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin) && !event.request.url.startsWith('https://fonts.')) {
     return;
   }
@@ -56,12 +55,10 @@ self.addEventListener('fetch', (event) => {
         }
 
         return fetch(event.request).then((networkResponse) => {
-          // Check if valid response
           if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
             return networkResponse;
           }
 
-          // Cache dynamic external network assets like Google Web Fonts when requested
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -69,9 +66,15 @@ self.addEventListener('fetch', (event) => {
 
           return networkResponse;
         }).catch(() => {
-          // If completely offline and asset not in cache
           console.log('[Service Worker] Fetch failed, device is offline:', event.request.url);
         });
       })
   );
+});
+
+// Listen to message from main thread to skip waiting and activate immediately
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });

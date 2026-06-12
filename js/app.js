@@ -958,10 +958,30 @@ function registerServiceWorker() {
       navigator.serviceWorker.register('./sw.js')
         .then(reg => {
           console.log('Spoptify Service Worker registered successfully:', reg.scope);
+          
+          // Monitor updates to the service worker
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('New update detected, updating app cache automatically...');
+                newWorker.postMessage({ action: 'skipWaiting' });
+              }
+            });
+          });
         })
         .catch(err => {
           console.error('Service Worker registration failed:', err);
         });
+    });
+
+    // Auto reload the tab once the new service worker activates and takes control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
     });
   }
 }
