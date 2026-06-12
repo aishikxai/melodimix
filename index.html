@@ -101,6 +101,9 @@
           <input type="text" id="search-input" placeholder="Search offline tracks...">
         </div>
         <div class="header-actions">
+          <button id="header-install-btn" class="btn btn-primary" style="display: none; background: linear-gradient(135deg, #00e5ff 0%, var(--accent-color) 100%); color: #120f1d; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); border: none; margin-right: 8px;">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg> Install App
+          </button>
           <span class="offline-badge">
             <span class="dot"></span> Offline Mode
           </span>
@@ -323,6 +326,19 @@
                 Copy Invite Link
               </button>
               <span id="copy-success-text" style="color: var(--accent-color); font-size: 13.5px; margin-left: 10px; display: none;">Copied Invite Link!</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>App Installation</h3>
+            <p>Install Spoptify as a standalone application on your mobile phone or PC for full screen playback and quick home screen access.</p>
+            <div class="info-card">
+              <button id="settings-install-btn" class="btn btn-primary btn-small">
+                Install Standalone App
+              </button>
+              <div id="install-instructions" style="margin-top: 12px; font-size: 13px; color: var(--text-muted); line-height: 1.4;">
+                If the button doesn't work, install it manually via your browser menu (choose <strong>"Add to Home Screen"</strong> on mobile Safari/Chrome, or click the <strong>Computer Monitor/Plus</strong> icon in your PC browser address bar).
+              </div>
             </div>
           </div>
 

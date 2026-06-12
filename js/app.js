@@ -122,6 +122,8 @@ const DOM = {
   storageInfo: document.getElementById('storage-info'),
   copyInviteBtn: document.getElementById('copy-invite-btn'),
   copySuccessText: document.getElementById('copy-success-text'),
+  settingsInstallBtn: document.getElementById('settings-install-btn'),
+  headerInstallBtn: document.getElementById('header-install-btn'),
 
   // Visualizer style dropdown
   visStyleSelect: document.getElementById('vis-style'),
@@ -149,6 +151,7 @@ let isMuted = false;
 document.addEventListener('DOMContentLoaded', async () => {
   checkAccessControl();
   setupAccessControlBindings();
+  setupPwaInstallation();
 
   setupRouting();
   setupTheme();
@@ -1339,4 +1342,55 @@ function debounce(func, delay) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func.apply(this, args), delay);
   };
+}
+
+// 14. PWA CUSTOM INSTALLATION PROMPT
+let deferredPrompt = null;
+
+function setupPwaInstallation() {
+  // Capture the browser's install event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallButtons();
+  });
+
+  const onInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`PWA Install Choice outcome: ${outcome}`);
+      deferredPrompt = null;
+      hideInstallButtons();
+    } else {
+      alert('The app is already installed or your browser doesn\'t support automatic prompt installation. You can install it from your browser menu ("Add to Home Screen" on mobile or "Install Spoptify" in PC browser bar).');
+    }
+  };
+
+  // Bind click events
+  if (DOM.headerInstallBtn) DOM.headerInstallBtn.addEventListener('click', onInstallClick);
+  if (DOM.settingsInstallBtn) DOM.settingsInstallBtn.addEventListener('click', onInstallClick);
+
+  // Monitor successful installation
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('Spoptify app was successfully installed natively!');
+    deferredPrompt = null;
+    hideInstallButtons();
+  });
+}
+
+function showInstallButtons() {
+  if (DOM.headerInstallBtn) DOM.headerInstallBtn.style.display = 'inline-flex';
+  if (DOM.settingsInstallBtn) {
+    DOM.settingsInstallBtn.disabled = false;
+    DOM.settingsInstallBtn.textContent = 'Install Standalone App';
+  }
+}
+
+function hideInstallButtons() {
+  if (DOM.headerInstallBtn) DOM.headerInstallBtn.style.display = 'none';
+  if (DOM.settingsInstallBtn) {
+    DOM.settingsInstallBtn.disabled = true;
+    DOM.settingsInstallBtn.textContent = 'App Installed ✓';
+  }
 }
