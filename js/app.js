@@ -136,7 +136,9 @@ const DOM = {
   searchOnlineInput: document.getElementById('search-online-input'),
   searchOnlineBtn: document.getElementById('search-online-btn'),
   searchOnlineLoading: document.getElementById('search-online-loading'),
-  searchOnlineResults: document.getElementById('search-online-results')
+  searchOnlineResults: document.getElementById('search-online-results'),
+  searchOnlineSuggestions: document.getElementById('search-online-suggestions'),
+  searchRecommendations: document.getElementById('search-recommendations')
 };
 
 // Global volume state
@@ -1046,12 +1048,26 @@ function setupAccessControlBindings() {
 function setupOnlineSearch() {
   if (!DOM.searchOnlineBtn || !DOM.searchOnlineInput) return;
 
-  const performSearch = async () => {
-    const query = DOM.searchOnlineInput.value.trim();
-    if (!query) return;
+  const performSearch = async (forcedQuery = null) => {
+    // Hide suggestions dropdown immediately
+    if (DOM.searchOnlineSuggestions) DOM.searchOnlineSuggestions.style.display = 'none';
+
+    const query = forcedQuery !== null ? forcedQuery.trim() : DOM.searchOnlineInput.value.trim();
+    if (!query) {
+      // If empty search, restore recommendations
+      showRecommendations();
+      return;
+    }
+
+    // Populate search box if forced (e.g. from recommendation cards)
+    DOM.searchOnlineInput.value = query;
 
     if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'flex';
-    if (DOM.searchOnlineResults) DOM.searchOnlineResults.innerHTML = '';
+    hideRecommendations();
+    if (DOM.searchOnlineResults) {
+      DOM.searchOnlineResults.style.display = 'none';
+      DOM.searchOnlineResults.innerHTML = '';
+    }
 
     try {
       const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=24`;
@@ -1059,6 +1075,7 @@ function setupOnlineSearch() {
       const data = await response.json();
 
       if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'none';
+      if (DOM.searchOnlineResults) DOM.searchOnlineResults.style.display = 'grid';
 
       if (data.resultCount === 0) {
         if (DOM.searchOnlineResults) {
@@ -1076,6 +1093,7 @@ function setupOnlineSearch() {
       console.error('Online search failed:', err);
       if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'none';
       if (DOM.searchOnlineResults) {
+        DOM.searchOnlineResults.style.display = 'grid';
         DOM.searchOnlineResults.innerHTML = `
           <div class="search-empty-state">
             <p style="color: #ff3366;">Search failed. Please check your internet connection and try again.</p>
@@ -1085,9 +1103,114 @@ function setupOnlineSearch() {
     }
   };
 
-  DOM.searchOnlineBtn.addEventListener('click', performSearch);
+  const showRecommendations = () => {
+    if (DOM.searchRecommendations) DOM.searchRecommendations.style.display = 'block';
+    if (DOM.searchOnlineResults) {
+      DOM.searchOnlineResults.style.display = 'none';
+      DOM.searchOnlineResults.innerHTML = '';
+    }
+  };
+
+  const hideRecommendations = () => {
+    if (DOM.searchRecommendations) DOM.searchRecommendations.style.display = 'none';
+  };
+
+  // Bind full search triggers
+  DOM.searchOnlineBtn.addEventListener('click', () => performSearch());
   DOM.searchOnlineInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') performSearch();
+  });
+
+  // Bind Recommendation Genre cards
+  const genreCards = document.querySelectorAll('.genre-card');
+  genreCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const query = card.getAttribute('data-query');
+      performSearch(query);
+    });
+  });
+
+  // Bind Recommendation Artist cards
+  const artistCards = document.querySelectorAll('.artist-circle-card');
+  artistCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const query = card.getAttribute('data-query');
+      performSearch(query);
+    });
+  });
+
+  // Implement debounced autocomplete suggestions query on keystroke
+  const handleAutocomplete = debounce(async (val) => {
+    const query = val.trim();
+    if (!query) {
+      if (DOM.searchOnlineSuggestions) DOM.searchOnlineSuggestions.style.display = 'none';
+      showRecommendations();
+      return;
+    }
+
+    try {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=5`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!DOM.searchOnlineSuggestions) return;
+
+      if (data.resultCount === 0 || DOM.searchOnlineInput.value.trim() === '') {
+        DOM.searchOnlineSuggestions.style.display = 'none';
+        return;
+      }
+
+      renderSuggestions(data.results);
+    } catch (err) {
+      console.warn('Failed to fetch suggestions:', err);
+    }
+  }, 250);
+
+  DOM.searchOnlineInput.addEventListener('input', (e) => {
+    handleAutocomplete(e.target.value);
+  });
+
+  // Hide suggestions dropdown on clicking outside
+  document.addEventListener('click', (e) => {
+    if (DOM.searchOnlineSuggestions && !e.target.closest('.search-online-input-wrapper')) {
+      DOM.searchOnlineSuggestions.style.display = 'none';
+    }
+  });
+
+  // Show suggestions when clicking back inside the input (if text exists)
+  DOM.searchOnlineInput.addEventListener('focus', () => {
+    if (DOM.searchOnlineInput.value.trim() && DOM.searchOnlineSuggestions && DOM.searchOnlineSuggestions.children.length > 0) {
+      DOM.searchOnlineSuggestions.style.display = 'flex';
+    }
+  });
+}
+
+function renderSuggestions(results) {
+  if (!DOM.searchOnlineSuggestions) return;
+  DOM.searchOnlineSuggestions.innerHTML = '';
+  DOM.searchOnlineSuggestions.style.display = 'flex';
+
+  results.forEach(track => {
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+    item.innerHTML = `
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <div class="suggestion-details">
+        <span class="suggestion-title truncate">${escapeHtml(track.trackName)}</span>
+        <span class="suggestion-artist truncate">${escapeHtml(track.artistName)}</span>
+      </div>
+    `;
+
+    item.addEventListener('click', () => {
+      DOM.searchOnlineInput.value = `${track.trackName} ${track.artistName}`;
+      DOM.searchOnlineSuggestions.style.display = 'none';
+      
+      // Trigger full search
+      const btn = document.getElementById('search-online-btn');
+      if (btn) btn.click();
+    });
+
+    DOM.searchOnlineSuggestions.appendChild(item);
   });
 }
 
@@ -1207,4 +1330,13 @@ function blobToBase64(blob) {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+// Debounce helper
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
 }
