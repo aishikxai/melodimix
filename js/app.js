@@ -2,6 +2,10 @@ import { AudioEngine } from './audio.js';
 import { AudioVisualizer } from './visualizer.js';
 import { saveTrack, getAllTracks, deleteTrack } from './db.js';
 
+// Access Code for Privacy Access Control
+// Share this code (or link ?code=spoptify2026) with users to give them access.
+const ACCESS_CODE = 'spoptify2026';
+
 // Instantiate Core Engines
 const audio = new AudioEngine();
 let visualizer = null;
@@ -116,6 +120,8 @@ const DOM = {
   colorPresetBtns: document.querySelectorAll('.color-preset-btn'),
   clearDbBtn: document.getElementById('clear-db-btn'),
   storageInfo: document.getElementById('storage-info'),
+  copyInviteBtn: document.getElementById('copy-invite-btn'),
+  copySuccessText: document.getElementById('copy-success-text'),
 
   // Visualizer style dropdown
   visStyleSelect: document.getElementById('vis-style'),
@@ -124,7 +130,13 @@ const DOM = {
   // Synth Home Card Controls
   playSynthBtn: document.getElementById('play-synth-btn'),
   synthTempo: document.getElementById('synth-tempo'),
-  synthTempoVal: document.getElementById('synth-tempo-val')
+  synthTempoVal: document.getElementById('synth-tempo-val'),
+
+  // Online Search View elements
+  searchOnlineInput: document.getElementById('search-online-input'),
+  searchOnlineBtn: document.getElementById('search-online-btn'),
+  searchOnlineLoading: document.getElementById('search-online-loading'),
+  searchOnlineResults: document.getElementById('search-online-results')
 };
 
 // Global volume state
@@ -133,6 +145,9 @@ let isMuted = false;
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', async () => {
+  checkAccessControl();
+  setupAccessControlBindings();
+
   setupRouting();
   setupTheme();
   setupDemoTracks();
@@ -149,6 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupImportAndLibraryBindings();
   setupEqualizerBindings();
   setupSettingsBindings();
+  setupOnlineSearch();
   
   // Set default volume
   updateVolume(currentVolume);
@@ -333,6 +349,24 @@ function setupAudioListeners() {
       // Visualizer banner
       DOM.visNowPlaying.textContent = `Playing: ${title}`;
 
+      // Cover Art setup
+      const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23251e3d"/><circle cx="50" cy="50" r="10" fill="%231db954"/></svg>';
+      
+      DOM.playbarCover.style.backgroundImage = `url('${coverSrc}')`;
+      DOM.playbarCover.style.backgroundSize = 'cover';
+      DOM.playbarCover.style.backgroundPosition = 'center';
+      
+      const largeLabel = DOM.largeVinyl.querySelector('.vinyl-large-label');
+      if (largeLabel) {
+        largeLabel.style.backgroundImage = `url('${coverSrc}')`;
+        largeLabel.style.backgroundSize = 'cover';
+        largeLabel.style.backgroundPosition = 'center';
+      }
+
+      DOM.sidebarVinyl.style.backgroundImage = `url('${coverSrc}')`;
+      DOM.sidebarVinyl.style.backgroundSize = 'cover';
+      DOM.sidebarVinyl.style.backgroundPosition = 'center';
+
       // Custom Synth controls on Home View
       if (track.isSynth) {
         DOM.playSynthBtn.innerHTML = `<svg viewBox="0 0 24 24" class="btn-icon"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Stop Synth Beats`;
@@ -354,12 +388,19 @@ function setupAudioListeners() {
       // Clean slate
       DOM.sidebarTitle.textContent = 'No Track Playing';
       DOM.sidebarArtist.textContent = 'Select a track';
+      DOM.sidebarVinyl.style.backgroundImage = '';
+      
       DOM.playbarTitle.textContent = 'No Track Playing';
       DOM.playbarArtist.textContent = 'Select a track to start listening';
+      DOM.playbarCover.style.backgroundImage = '';
       DOM.progressDuration.textContent = '0:00';
+      
       DOM.largeTitle.textContent = 'No Track Playing';
       DOM.largeArtist.textContent = 'Select a track to enjoy music';
       DOM.largeProgressDuration.textContent = '0:00';
+      const largeLabel = DOM.largeVinyl.querySelector('.vinyl-large-label');
+      if (largeLabel) largeLabel.style.backgroundImage = '';
+      
       DOM.visNowPlaying.textContent = 'Playing: None';
       DOM.playSynthBtn.innerHTML = `<svg viewBox="0 0 24 24" class="btn-icon"><path d="M8 5v14l11-7z"/></svg> Generate Live Beats`;
 
@@ -709,11 +750,12 @@ async function refreshLibrary() {
       tr.classList.add('playing');
     }
 
+    const trCover = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23251e3d"/><circle cx="50" cy="50" r="10" fill="%231db954"/></svg>';
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>
         <div class="track-title-cell">
-          <div class="mini-cover"></div>
+          <div class="mini-cover" style="background-image: url('${trCover}'); background-size: cover; background-position: center;"></div>
           <span class="truncate">${escapeHtml(track.title)}</span>
         </div>
       </td>
@@ -917,4 +959,252 @@ function registerServiceWorker() {
         });
     });
   }
+}
+
+// 12. ACCESS CONTROL AND PASSCODE LOGIC
+function checkAccessControl() {
+  const isUnlocked = localStorage.getItem('spoptify_unlocked') === 'true';
+  const urlParams = new URLSearchParams(window.location.search);
+  const codeParam = urlParams.get('code');
+
+  if (codeParam === ACCESS_CODE) {
+    localStorage.setItem('spoptify_unlocked', 'true');
+    // Clean URL so the code isn't exposed in address bar
+    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+    hideLockScreen();
+    return;
+  }
+
+  if (isUnlocked) {
+    hideLockScreen();
+  } else {
+    showLockScreen();
+  }
+}
+
+function showLockScreen() {
+  const lockScreen = document.getElementById('lock-screen');
+  if (lockScreen) {
+    lockScreen.style.display = 'flex';
+  }
+}
+
+function hideLockScreen() {
+  const lockScreen = document.getElementById('lock-screen');
+  if (lockScreen) {
+    lockScreen.style.display = 'none';
+  }
+}
+
+function setupAccessControlBindings() {
+  const unlockBtn = document.getElementById('lock-unlock-btn');
+  const lockInput = document.getElementById('lock-input');
+  const lockError = document.getElementById('lock-error');
+
+  if (unlockBtn && lockInput) {
+    unlockBtn.addEventListener('click', () => {
+      if (lockInput.value === ACCESS_CODE) {
+        localStorage.setItem('spoptify_unlocked', 'true');
+        hideLockScreen();
+      } else {
+        if (lockError) lockError.style.display = 'block';
+        lockInput.value = '';
+      }
+    });
+
+    lockInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        unlockBtn.click();
+      }
+    });
+  }
+
+  // Set active access code text in settings
+  const settingsCodeLabel = document.getElementById('settings-access-code');
+  if (settingsCodeLabel) {
+    settingsCodeLabel.textContent = ACCESS_CODE;
+  }
+
+  // Copy Invite Link button
+  if (DOM.copyInviteBtn) {
+    DOM.copyInviteBtn.addEventListener('click', () => {
+      const inviteUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?code=${ACCESS_CODE}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        if (DOM.copySuccessText) {
+          DOM.copySuccessText.style.display = 'inline';
+          setTimeout(() => {
+            DOM.copySuccessText.style.display = 'none';
+          }, 2000);
+        }
+      });
+    });
+  }
+}
+
+// 13. ONLINE SEARCH AND IMPORT
+function setupOnlineSearch() {
+  if (!DOM.searchOnlineBtn || !DOM.searchOnlineInput) return;
+
+  const performSearch = async () => {
+    const query = DOM.searchOnlineInput.value.trim();
+    if (!query) return;
+
+    if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'flex';
+    if (DOM.searchOnlineResults) DOM.searchOnlineResults.innerHTML = '';
+
+    try {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=24`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'none';
+
+      if (data.resultCount === 0) {
+        if (DOM.searchOnlineResults) {
+          DOM.searchOnlineResults.innerHTML = `
+            <div class="search-empty-state">
+              <p>No tracks found online for "${escapeHtml(query)}". Try another search!</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      renderOnlineResults(data.results);
+    } catch (err) {
+      console.error('Online search failed:', err);
+      if (DOM.searchOnlineLoading) DOM.searchOnlineLoading.style.display = 'none';
+      if (DOM.searchOnlineResults) {
+        DOM.searchOnlineResults.innerHTML = `
+          <div class="search-empty-state">
+            <p style="color: #ff3366;">Search failed. Please check your internet connection and try again.</p>
+          </div>
+        `;
+      }
+    }
+  };
+
+  DOM.searchOnlineBtn.addEventListener('click', performSearch);
+  DOM.searchOnlineInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSearch();
+  });
+}
+
+function renderOnlineResults(results) {
+  if (!DOM.searchOnlineResults) return;
+  DOM.searchOnlineResults.innerHTML = '';
+
+  results.forEach(track => {
+    const card = document.createElement('div');
+    card.className = 'track-card';
+
+    const hiresArtwork = track.artworkUrl100 ? track.artworkUrl100.replace('100x100bb', '300x300bb') : '';
+    const durationSec = track.trackTimeMillis ? Math.floor(track.trackTimeMillis / 1000) : 180;
+
+    card.innerHTML = `
+      <div class="track-card-art">
+        <img class="track-card-art-img" src="${hiresArtwork}" alt="${escapeHtml(track.trackName)}">
+      </div>
+      <h3 class="track-card-title truncate" title="${escapeHtml(track.trackName)}">${escapeHtml(track.trackName)}</h3>
+      <p class="track-card-artist truncate" title="${escapeHtml(track.artistName)}">${escapeHtml(track.artistName)}</p>
+      
+      <div class="search-track-btn-group">
+        <button class="search-play-btn" title="Stream Preview">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;"><path d="M8 5v14l11-7z"/></svg> Play
+        </button>
+        <button class="search-download-btn" title="Save offline" data-preview="${track.previewUrl}" data-art="${hiresArtwork}">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg> Save
+        </button>
+      </div>
+    `;
+
+    // Stream preview click
+    card.querySelector('.search-play-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      
+      const previewTrack = {
+        id: 'preview-' + track.trackId,
+        title: track.trackName + ' (Preview)',
+        artist: track.artistName,
+        duration: durationSec,
+        file: null,
+        isSynth: false,
+        cover: hiresArtwork
+      };
+
+      audio.initContext();
+      audio.stopCurrentMedia();
+      audio.isSynthPlaying = false;
+      audio.audioElement.src = track.previewUrl;
+      audio.isPlaying = true;
+      audio.audioElement.play().catch(err => {
+        console.error('Playback of preview failed:', err);
+      });
+      
+      audio.currentIndex = -1; // reset library index
+      
+      if (audio.onTrackChange) audio.onTrackChange(previewTrack);
+      if (audio.onPlayStateChange) audio.onPlayStateChange(true);
+    });
+
+    // Save offline click
+    const downloadBtn = card.querySelector('.search-download-btn');
+    downloadBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      
+      const previewUrl = downloadBtn.getAttribute('data-preview');
+      const artUrl = downloadBtn.getAttribute('data-art');
+
+      downloadBtn.disabled = true;
+      downloadBtn.classList.add('downloading');
+      downloadBtn.innerHTML = `<span class="spinner"></span> Saving...`;
+
+      try {
+        // Use a CORS proxy to fetch the MP3 file client-side
+        const proxiedAudioUrl = `https://corsproxy.io/?${encodeURIComponent(previewUrl)}`;
+        const audioResponse = await fetch(proxiedAudioUrl);
+        if (!audioResponse.ok) throw new Error('Audio fetch failed');
+        const audioBlob = await audioResponse.blob();
+
+        // Convert cover art to Base64 to save in IndexedDB
+        let coverBase64 = null;
+        try {
+          const proxiedArtUrl = `https://corsproxy.io/?${encodeURIComponent(artUrl)}`;
+          const artResponse = await fetch(proxiedArtUrl);
+          const artBlob = await artResponse.blob();
+          coverBase64 = await blobToBase64(artBlob);
+        } catch (artErr) {
+          console.warn('Failed to fetch cover art via proxy, saving without custom cover:', artErr);
+        }
+
+        // Save to IndexedDB database
+        await saveTrack(audioBlob, track.trackName, track.artistName, durationSec, coverBase64);
+
+        downloadBtn.className = 'search-download-btn downloaded';
+        downloadBtn.innerHTML = `✓ Saved`;
+
+        // Refresh offline library table
+        await refreshLibrary();
+      } catch (err) {
+        console.error('Failed to download track:', err);
+        downloadBtn.disabled = false;
+        downloadBtn.classList.remove('downloading');
+        downloadBtn.className = 'search-download-btn';
+        downloadBtn.innerHTML = `✗ Error`;
+        alert('Could not download file for offline use. Check your internet connection.');
+      }
+    });
+
+    DOM.searchOnlineResults.appendChild(card);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
