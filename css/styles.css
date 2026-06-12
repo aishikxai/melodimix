@@ -283,6 +283,12 @@ body {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.playlist-avatar-mini.spotify-branded {
+  color: var(--accent-color);
+  background-color: rgba(29, 185, 84, 0.1);
 }
 
 .playlist-avatar-mini svg {

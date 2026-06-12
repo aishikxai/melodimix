@@ -12,6 +12,19 @@ import {
   updateTrack,
   getTrack
 } from './db.js';
+import {
+  setSpotifyClientId,
+  getSpotifyClientId,
+  getSpotifyAccessToken,
+  isSpotifyConnected,
+  getSpotifyLoginUrl,
+  handleSpotifyCallback,
+  logoutSpotify,
+  fetchSpotifyProfile,
+  fetchSpotifyPlaylists,
+  fetchSpotifyPlaylistTracks,
+  fetchSpotifyLikedTracks
+} from './spotify.js';
 
 // Access Code for Privacy Access Control
 const ACCESS_CODE = 'spoptify2026';
@@ -72,7 +85,6 @@ const DOM = {
   menuEqualizer: document.getElementById('menu-equalizer'),
   menuSettings: document.getElementById('menu-settings'),
   menuLock: document.getElementById('menu-lock'),
-  profileLogoutBtn: document.getElementById('profile-logout-btn'),
 
   // Header Search bar wrapper
   headerSearchBar: document.getElementById('header-search-bar'),
@@ -135,7 +147,7 @@ const DOM = {
   rightPanelArtist: document.getElementById('right-panel-artist'),
   rightPanelQueueContainer: document.getElementById('right-panel-queue-container'),
 
-  // Fullscreen Drawer (vinyl overlay from before, acts as immersive experience)
+  // Fullscreen Drawer
   fullscreenPlayer: document.getElementById('fullscreen-player'),
   fullscreenCloseBtn: document.getElementById('fullscreen-close-btn'),
   largeVinyl: document.getElementById('large-vinyl'),
@@ -179,6 +191,16 @@ const DOM = {
   playSynthBtn: document.getElementById('play-synth-btn'),
   synthTempo: document.getElementById('synth-tempo'),
   synthTempoVal: document.getElementById('synth-tempo-val'),
+
+  // Spotify UI bindings
+  spotifyClientIdInput: document.getElementById('spotify-client-id-input'),
+  spotifySaveClientIdBtn: document.getElementById('spotify-save-client-id-btn'),
+  spotifyConnectForm: document.getElementById('spotify-connect-form'),
+  spotifyConnectedStatus: document.getElementById('spotify-connected-status'),
+  spotifyUsername: document.getElementById('spotify-username'),
+  spotifySyncBtn: document.getElementById('spotify-sync-btn'),
+  spotifyDisconnectBtn: document.getElementById('spotify-disconnect-btn'),
+  spotifySyncSuccessText: document.getElementById('spotify-sync-success-text'),
 };
 
 // Global State
@@ -195,16 +217,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupAccessControlBindings();
   setupPwaInstallation();
 
+  // Handle Spotify redirect authorization
+  const hashHandled = handleSpotifyCallback();
+  if (hashHandled) {
+    console.log('Spotify access token successfully received from callback');
+  }
+
   setupRouting();
   setupTheme();
-  
-  // Initialize procedural beats items
   setupFeaturedTracks();
-  
-  // Setup audio engines visualizer once canvas elements are loaded
   initVisualizer();
   
-  // Setup all event listeners
   setupAudioListeners();
   setupPlayerControlBindings();
   setupHeaderAndSidebarBindings();
@@ -212,6 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSettingsBindings();
   setupOnlineSearch();
   setupPlaylistDetailsActions();
+  setupSpotifyBindings();
 
   // Load custom database contents
   await reloadAppData();
@@ -229,7 +253,6 @@ async function reloadAppData() {
   await loadLikedSongsCount();
   renderHomeView();
   
-  // Re-render active view if it depends on data
   if (currentView === 'liked-songs-view') {
     renderLikedSongsView();
   } else if (currentView === 'playlist-view' && currentPlaylistId !== null) {
@@ -239,7 +262,6 @@ async function reloadAppData() {
 
 // 1. NAVIGATION & ROUTING
 function setupRouting() {
-  // Bind standard sidebar menu links
   DOM.navItems.forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
@@ -248,12 +270,10 @@ function setupRouting() {
     });
   });
 
-  // Bind sidebar liked songs playlist click
   DOM.sidebarLikedSongs.addEventListener('click', () => {
     navigateToView('liked-songs-view');
   });
 
-  // Bind dropdown profile triggers
   DOM.menuEqualizer.addEventListener('click', () => {
     navigateToView('equalizer-view');
     DOM.profileMenu.style.display = 'none';
@@ -270,7 +290,6 @@ function setupRouting() {
     DOM.profileMenu.style.display = 'none';
   });
 
-  // Expand fullscreen player on playbar card click
   DOM.playbarExpandTrigger.addEventListener('click', () => {
     DOM.fullscreenPlayer.classList.add('active');
     if (fullscreenVisualizer) {
@@ -279,7 +298,6 @@ function setupRouting() {
     }
   });
 
-  // Close fullscreen player
   DOM.fullscreenCloseBtn.addEventListener('click', () => {
     DOM.fullscreenPlayer.classList.remove('active');
     if (fullscreenVisualizer) {
@@ -287,34 +305,26 @@ function setupRouting() {
     }
   });
 
-  // Footer Now Playing/Queue panel toggle
   DOM.playbarQueueBtn.addEventListener('click', () => {
     toggleRightPanel();
   });
 
-  // Footer EQ navigation shortcut
   DOM.playbarEqBtn.addEventListener('click', () => {
     navigateToView('equalizer-view');
   });
 
-  // Dynamic back/forward arrow navigation (mocks browser history behavior)
   const backBtn = document.querySelector('.arrow-btn[title="Back"]');
   const forwardBtn = document.querySelector('.arrow-btn[title="Forward"]');
   
   if (backBtn) {
     backBtn.addEventListener('click', () => {
-      // Toggle back to home or search if in subviews
-      if (currentView !== 'home-view') {
-        navigateToView('home-view');
-      }
+      if (currentView !== 'home-view') navigateToView('home-view');
     });
   }
 
   if (forwardBtn) {
     forwardBtn.addEventListener('click', () => {
-      if (currentView === 'home-view') {
-        navigateToView('search-view');
-      }
+      if (currentView === 'home-view') navigateToView('search-view');
     });
   }
 }
@@ -323,7 +333,6 @@ function navigateToView(viewId, playlistId = null) {
   currentView = viewId;
   currentPlaylistId = playlistId;
 
-  // Toggle active view panel
   DOM.panels.forEach(panel => {
     panel.classList.remove('active');
     if (panel.id === viewId) {
@@ -331,7 +340,6 @@ function navigateToView(viewId, playlistId = null) {
     }
   });
 
-  // Toggle active styling in nav items
   DOM.navItems.forEach(item => {
     item.classList.remove('active');
     if (item.getAttribute('data-target') === viewId) {
@@ -341,14 +349,12 @@ function navigateToView(viewId, playlistId = null) {
 
   DOM.sidebarLikedSongs.classList.toggle('active', viewId === 'liked-songs-view');
 
-  // Handle header search bar visibility
   if (viewId === 'search-view') {
     DOM.headerSearchBar.style.display = 'flex';
   } else {
     DOM.headerSearchBar.style.display = 'none';
   }
 
-  // Load specific subview contents
   if (viewId === 'playlist-view' && playlistId !== null) {
     renderPlaylistView(playlistId);
   } else if (viewId === 'liked-songs-view') {
@@ -357,16 +363,12 @@ function navigateToView(viewId, playlistId = null) {
     renderHomeView();
   }
 
-  // Hide dropdown menu
   DOM.profileMenu.style.display = 'none';
-  
-  // Clear any open context menu
   hidePlaylistSelectMenu();
 }
 
 function toggleRightPanel() {
   DOM.rightPanel.classList.toggle('collapsed');
-  // Update queue content when opening
   if (!DOM.rightPanel.classList.contains('collapsed')) {
     updateRightPanelQueue();
   }
@@ -443,7 +445,7 @@ function setupFeaturedTracks() {
 function initVisualizer() {
   const fullCanvas = document.getElementById('fullscreen-bg-canvas');
   fullscreenVisualizer = new AudioVisualizer(fullCanvas, audio);
-  fullscreenVisualizer.setStyle('particles'); // Background floating particles for fullscreen player
+  fullscreenVisualizer.setStyle('particles');
   
   const activeColor = localStorage.getItem('spoptify-accent-color') || '#1db954';
   fullscreenVisualizer.setThemeColor(activeColor);
@@ -565,7 +567,6 @@ function setupAudioListeners() {
 }
 
 function highlightActiveTrackInDOM(trackId) {
-  // Playlist tables
   const playlistRows = document.querySelectorAll('.playlist-row');
   playlistRows.forEach(row => {
     const rowId = row.getAttribute('data-id');
@@ -663,7 +664,6 @@ function setupPlayerControlBindings() {
   DOM.repeatBtn.addEventListener('click', toggleRepeat);
   DOM.largeRepeatBtn.addEventListener('click', toggleRepeat);
 
-  // Playbar Heart click action
   DOM.playbarHeartBtn.addEventListener('click', async () => {
     const currentTrack = audio.getCurrentTrack();
     if (!currentTrack) return;
@@ -671,7 +671,6 @@ function setupPlayerControlBindings() {
     await toggleLikeTrack(currentTrack);
   });
 
-  // Slider drags seeking
   setupSliderInteraction(DOM.progressBar, (percent) => {
     audio.seek(percent);
   });
@@ -679,7 +678,6 @@ function setupPlayerControlBindings() {
     audio.seek(percent);
   });
 
-  // Volume slider interaction
   setupSliderInteraction(DOM.volumeSlider, (percent) => {
     isMuted = false;
     currentVolume = percent;
@@ -725,7 +723,6 @@ function updatePlaybarHeartIcon(isLiked) {
   }
 }
 
-// Drag / Click helper for custom sliders
 function setupSliderInteraction(sliderEl, onSeekCallback) {
   let isDragging = false;
 
@@ -763,7 +760,6 @@ function setupSliderInteraction(sliderEl, onSeekCallback) {
 
 // 7. HEADER, SIDEBAR, AND PLAYLIST CREATION BINDINGS
 function setupHeaderAndSidebarBindings() {
-  // Toggle profile menu
   DOM.profileTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
     DOM.profileMenu.style.display = DOM.profileMenu.style.display === 'none' ? 'block' : 'none';
@@ -773,7 +769,6 @@ function setupHeaderAndSidebarBindings() {
     DOM.profileMenu.style.display = 'none';
   });
 
-  // Local files import
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.multiple = true;
@@ -787,7 +782,6 @@ function setupHeaderAndSidebarBindings() {
     }
   });
 
-  // Create Playlist buttons
   DOM.createPlaylistBtn.addEventListener('click', () => {
     showCreatePlaylistModal();
   });
@@ -812,12 +806,10 @@ function setupHeaderAndSidebarBindings() {
     }
   });
 
-  // Close collapsible right panel
   DOM.closeRightPanelBtn.addEventListener('click', () => {
     DOM.rightPanel.classList.add('collapsed');
   });
 
-  // Global click to close add-to-playlist context menu
   document.addEventListener('click', (e) => {
     if (!e.target.closest('#add-to-playlist-menu') && !e.target.closest('.plus-add-to-playlist')) {
       hidePlaylistSelectMenu();
@@ -896,10 +888,17 @@ function renderSidebarPlaylists() {
       item.classList.add('active');
     }
 
+    const isSpotify = playlist.isSpotify;
+    const avatarHtml = isSpotify 
+      ? `<div class="playlist-avatar-mini spotify-branded">
+           <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.565.387-.86.207-2.377-1.454-5.37-1.783-8.893-.982-.336.075-.668-.135-.744-.47-.077-.337.135-.668.47-.745 3.856-.88 7.15-.505 9.82 1.13.295.18.387.563.207.86zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.08-1.182-.413.125-.85-.107-.978-.52-.128-.414.107-.85.52-.978 3.67-1.114 8.243-.574 11.35 1.337.368.228.488.708.262 1.083zm.106-2.833C14.385 8.8 8.564 8.61 5.176 9.637c-.54.163-1.107-.15-1.27-.69-.163-.54.15-1.106.69-1.27 3.886-1.18 10.31-.967 14.386 1.45.485.288.643.91.355 1.396-.288.485-.91.642-1.396.355z"/></svg>
+         </div>`
+      : `<div class="playlist-avatar-mini">
+           <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+         </div>`;
+
     item.innerHTML = `
-      <div class="playlist-avatar-mini">
-        <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-      </div>
+      ${avatarHtml}
       <div class="lib-item-info">
         <span class="lib-item-title">${escapeHtml(playlist.name)}</span>
         <span class="lib-item-subtitle">Playlist • ${playlist.trackIds.length} songs</span>
@@ -925,14 +924,11 @@ async function loadLikedSongsCount() {
 
 // 9. VIEW RENDERING ENGINE
 function renderHomeView() {
-  // Time-of-day greeting
   const greeting = getGreeting();
   DOM.greetingTitle.textContent = greeting;
 
-  // Render top quick access grid (up to 6 items: Liked Songs, synth loops, and custom playlists)
   DOM.quickLinksGrid.innerHTML = '';
 
-  // 1. Liked Songs access card
   const likedCard = document.createElement('div');
   likedCard.className = 'quick-card';
   likedCard.innerHTML = `
@@ -954,7 +950,6 @@ function renderHomeView() {
   });
   DOM.quickLinksGrid.appendChild(likedCard);
 
-  // 2. Synthesizer custom card
   const synthCard = document.createElement('div');
   synthCard.className = 'quick-card';
   synthCard.innerHTML = `
@@ -971,20 +966,24 @@ function renderHomeView() {
       e.stopPropagation();
       DOM.playSynthBtn.click();
     } else {
-      // Just start playing
       DOM.playSynthBtn.click();
     }
   });
   DOM.quickLinksGrid.appendChild(synthCard);
 
-  // 3. User playlists in grid (up to 4)
   const gridPlaylists = playlists.slice(0, 4);
   gridPlaylists.forEach(playlist => {
     const card = document.createElement('div');
     card.className = 'quick-card';
+    const isSpotify = playlist.isSpotify;
+    const backgroundStyle = isSpotify ? `background: rgba(29, 185, 84, 0.1);` : `background-color: #282828;`;
+    const svgIcon = isSpotify 
+      ? `<svg viewBox="0 0 24 24" style="fill: var(--accent-color); width: 32px; height: 32px;"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.565.387-.86.207-2.377-1.454-5.37-1.783-8.893-.982-.336.075-.668-.135-.744-.47-.077-.337.135-.668.47-.745 3.856-.88 7.15-.505 9.82 1.13.295.18.387.563.207.86zm1.224-2.723c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.08-1.182-.413.125-.85-.107-.978-.52-.128-.414.107-.85.52-.978 3.67-1.114 8.243-.574 11.35 1.337.368.228.488.708.262 1.083zm.106-2.833C14.385 8.8 8.564 8.61 5.176 9.637c-.54.163-1.107-.15-1.27-.69-.163-.54.15-1.106.69-1.27 3.886-1.18 10.31-.967 14.386 1.45.485.288.643.91.355 1.396-.288.485-.91.642-1.396.355z"/></svg>`
+      : `<svg viewBox="0 0 24 24" style="fill: #b3b3b3; width: 32px; height: 32px;"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>`;
+
     card.innerHTML = `
-      <div class="quick-card-art" style="background-color: #282828;">
-        <svg viewBox="0 0 24 24" style="fill: #b3b3b3;"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+      <div class="quick-card-art" style="${backgroundStyle}">
+        ${svgIcon}
       </div>
       <div class="quick-card-title">${escapeHtml(playlist.name)}</div>
       <button class="play-hover-btn">
@@ -1001,13 +1000,6 @@ function renderHomeView() {
     });
     DOM.quickLinksGrid.appendChild(card);
   });
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
 }
 
 // PLAYLIST DETAIL VIEW RENDERING
@@ -1033,7 +1025,6 @@ async function renderPlaylistView(playlistId) {
     `;
     DOM.playlistDetailDuration.textContent = '0 min';
   } else {
-    // Map track IDs to database tracks or synth presets
     const playlistTracks = playlist.trackIds.map(tid => {
       const localTrack = allTracks.find(t => t.id === tid);
       if (localTrack) return localTrack;
@@ -1054,6 +1045,28 @@ async function renderPlaylistView(playlistId) {
       }
 
       const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23181818"/><path d="M40 35l20 15-20 15z" fill="white"/></svg>';
+      
+      // Spotify track row action button HTML
+      const isSpotifyTrack = String(track.id).startsWith('spotify-');
+      const hasFile = track.file !== null;
+      let actionBtnHtml = '';
+
+      if (isSpotifyTrack) {
+        if (hasFile) {
+          actionBtnHtml = `<span style="color:var(--accent-color); font-size:14px; margin-right:12px; font-weight:bold;" title="Saved offline">✓</span>`;
+        } else if (track.previewUrl) {
+          actionBtnHtml = `<button class="btn-icon-only spotify-download-row-btn" title="Download preview offline" data-track-id="${track.id}" style="margin-right:12px; color:var(--text-muted);">
+                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                           </button>`;
+        } else {
+          actionBtnHtml = `<span style="color:var(--text-dim); font-size:11px; margin-right:12px;" title="No streaming preview available">No Link</span>`;
+        }
+      }
+
+      actionBtnHtml += `<button class="btn-icon-only remove-track-btn" title="Remove from playlist" data-track-id="${track.id}">
+                          <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19 13H5v-2h14v2z"/></svg>
+                        </button>`;
+
       tr.innerHTML = `
         <td class="track-num">${index + 1}</td>
         <td>
@@ -1067,15 +1080,15 @@ async function renderPlaylistView(playlistId) {
         <td class="track-artist-col">${escapeHtml(track.artist)}</td>
         <td>${formatTime(track.duration)}</td>
         <td>
-          <button class="btn-icon-only remove-track-btn" title="Remove from playlist" data-track-id="${track.id}">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19 13H5v-2h14v2z"/></svg>
-          </button>
+          <div style="display:flex; align-items:center; justify-content:flex-end;">
+            ${actionBtnHtml}
+          </div>
         </td>
       `;
 
       // Row playback clicks
       tr.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-track-btn')) return;
+        if (e.target.closest('.remove-track-btn') || e.target.closest('.spotify-download-row-btn')) return;
         audio.setPlaylist(playlistTracks);
         audio.playTrack(track);
       });
@@ -1084,12 +1097,22 @@ async function renderPlaylistView(playlistId) {
       tr.querySelector('.remove-track-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
         const tid = e.currentTarget.getAttribute('data-track-id');
-        const numericTid = isNaN(tid) ? tid : Number(tid);
+        const finalTid = isNaN(tid) ? tid : Number(tid);
         
-        playlist.trackIds = playlist.trackIds.filter(id => id !== numericTid);
+        playlist.trackIds = playlist.trackIds.filter(id => id !== finalTid);
         await updatePlaylist(playlist);
         await reloadAppData();
       });
+
+      // Spotify download track binding
+      const spDownloadBtn = tr.querySelector('.spotify-download-row-btn');
+      if (spDownloadBtn) {
+        spDownloadBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const tid = e.currentTarget.getAttribute('data-track-id');
+          await downloadSpotifyTrack(tid, e.currentTarget);
+        });
+      }
 
       DOM.playlistTracksBody.appendChild(tr);
     });
@@ -1098,10 +1121,38 @@ async function renderPlaylistView(playlistId) {
     DOM.playlistDetailDuration.textContent = `${mins} min`;
   }
 
-  // Bind playlist play button
   DOM.playlistPlayBtn.onclick = () => {
     playUserPlaylist(playlistId);
   };
+}
+
+// Spotify stream preview downloader
+async function downloadSpotifyTrack(trackId, downloadBtn) {
+  downloadBtn.disabled = true;
+  downloadBtn.innerHTML = `<span class="spinner"></span>`;
+  
+  try {
+    const track = await getTrack(trackId);
+    if (!track || !track.previewUrl) throw new Error('No preview URL available');
+    
+    const proxiedUrl = `https://corsproxy.io/?${encodeURIComponent(track.previewUrl)}`;
+    const response = await fetch(proxiedUrl);
+    if (!response.ok) throw new Error('Audio fetch failed');
+    const blob = await response.blob();
+    
+    // Save to database
+    track.file = blob;
+    await updateTrack(track);
+    
+    // Sync buttons
+    downloadBtn.outerHTML = `<span style="color:var(--accent-color); font-size:14px; margin-right:12px; font-weight:bold;" title="Saved offline">✓</span>`;
+    await reloadAppData();
+  } catch (err) {
+    console.error('Failed to download Spotify preview:', err);
+    downloadBtn.disabled = false;
+    downloadBtn.innerHTML = `✗`;
+    alert('Could not download preview file offline. The track preview may have expired or you are offline.');
+  }
 }
 
 // LIKED SONGS VIEW RENDERING
@@ -1134,6 +1185,24 @@ async function renderLikedSongsView() {
     }
 
     const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23181818"/><path d="M40 35l20 15-20 15z" fill="white"/></svg>';
+    
+    // Spotify track check
+    const isSpotifyTrack = String(track.id).startsWith('spotify-');
+    const hasFile = track.file !== null;
+    let actionBtnHtml = '';
+
+    if (isSpotifyTrack) {
+      if (hasFile) {
+        actionBtnHtml = `<span style="color:var(--accent-color); font-size:14px; margin-right:12px; font-weight:bold;" title="Saved offline">✓</span>`;
+      } else if (track.previewUrl) {
+        actionBtnHtml = `<button class="btn-icon-only spotify-download-row-btn" title="Download preview offline" data-track-id="${track.id}" style="margin-right:12px; color:var(--text-muted);">
+                           <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                         </button>`;
+      } else {
+        actionBtnHtml = `<span style="color:var(--text-dim); font-size:11px; margin-right:12px;" title="No streaming preview available">No Link</span>`;
+      }
+    }
+
     tr.innerHTML = `
       <td class="track-num">${index + 1}</td>
       <td>
@@ -1147,32 +1216,42 @@ async function renderLikedSongsView() {
       <td>${escapeHtml(track.artist)}</td>
       <td>${formatTime(track.duration)}</td>
       <td>
-        <button class="btn-icon-only playbar-heart-btn liked-page-heart" title="Unlike track" data-track-id="${track.id}">
-          <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--accent-color);"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        </button>
+        <div style="display:flex; align-items:center; justify-content:flex-end;">
+          ${actionBtnHtml}
+          <button class="btn-icon-only playbar-heart-btn liked-page-heart" title="Unlike track" data-track-id="${track.id}">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--accent-color);"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </button>
+        </div>
       </td>
     `;
 
-    // Row clicks triggers play
     tr.addEventListener('click', (e) => {
-      if (e.target.closest('.liked-page-heart')) return;
+      if (e.target.closest('.liked-page-heart') || e.target.closest('.spotify-download-row-btn')) return;
       audio.setPlaylist(likedTracks);
       audio.playTrack(track);
     });
 
-    // Unlike click
     tr.querySelector('.liked-page-heart').addEventListener('click', async (e) => {
       e.stopPropagation();
       const tid = e.currentTarget.getAttribute('data-track-id');
-      const numericTid = isNaN(tid) ? tid : Number(tid);
+      const finalTid = isNaN(tid) ? tid : Number(tid);
       
-      const dbTrack = allTracks.find(t => t.id === numericTid);
+      const dbTrack = allTracks.find(t => t.id === finalTid);
       if (dbTrack) {
         dbTrack.liked = false;
         await updateTrack(dbTrack);
         await reloadAppData();
       }
     });
+
+    const spDownloadBtn = tr.querySelector('.spotify-download-row-btn');
+    if (spDownloadBtn) {
+      spDownloadBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const tid = e.currentTarget.getAttribute('data-track-id');
+        await downloadSpotifyTrack(tid, e.currentTarget);
+      });
+    }
 
     DOM.likedTracksBody.appendChild(tr);
   });
@@ -1213,7 +1292,6 @@ async function playLikedSongsPlaylist() {
 
 // 10. PLAYLIST DETAIL PAGE ADD SONG SEARCH ACTIONS
 function setupPlaylistDetailsActions() {
-  // Bind playlist deletion
   DOM.deletePlaylistBtn.addEventListener('click', async () => {
     if (currentPlaylistId !== null && confirm('Are you sure you want to delete this playlist? This action cannot be undone.')) {
       await deletePlaylist(currentPlaylistId);
@@ -1222,20 +1300,17 @@ function setupPlaylistDetailsActions() {
     }
   });
 
-  // Bind playlist custom search add inputs
   DOM.playlistAddSearchInput.addEventListener('input', debounce(async (e) => {
     const query = e.target.value.trim().toLowerCase();
     DOM.playlistAddSearchResults.innerHTML = '';
     if (!query) return;
 
-    // Search databases
     const allTracks = await getAllTracks();
     const matches = allTracks.filter(t => 
       t.title.toLowerCase().includes(query) || 
       t.artist.toLowerCase().includes(query)
     ).slice(0, 5);
 
-    // Also search synths
     const synthMatches = SYNTH_TRACKS.filter(s => 
       s.title.toLowerCase().includes(query) || 
       s.artist.toLowerCase().includes(query)
@@ -1303,14 +1378,11 @@ function showPlaylistSelectMenu(track, x, y) {
       btn.className = 'menu-item-option';
       btn.textContent = playlist.name;
       btn.addEventListener('click', async () => {
-        // Add track to selection
         const p = await getPlaylist(playlist.id);
         if (p) {
-          // If track doesn't have an ID in database (streaming track), save it first!
           let finalId = track.id;
           
           if (String(track.id).startsWith('preview-')) {
-            // Need to save/download before adding to playlist
             alert('Please click the "Save" button to download this track for offline use before adding it to your custom playlist.');
             hidePlaylistSelectMenu();
             return;
@@ -1333,7 +1405,6 @@ function showPlaylistSelectMenu(track, x, y) {
 
   DOM.addToPlaylistMenu.style.display = 'block';
   
-  // Set positioning safely
   const menuWidth = 180;
   const menuHeight = DOM.addToPlaylistMenu.offsetHeight || 150;
   const windowWidth = window.innerWidth;
@@ -1361,24 +1432,19 @@ function hidePlaylistSelectMenu() {
 // 12. TOGGLE LIKED STATE ON ANY TRACK
 async function toggleLikeTrack(track) {
   const allTracks = await getAllTracks();
-  
-  // 1. Check if track already exists in database
   const dbTrack = allTracks.find(t => t.id === track.id || (track.isSynth && t.id === track.id));
 
   if (dbTrack) {
     dbTrack.liked = !dbTrack.liked;
     await updateTrack(dbTrack);
     
-    // Update active playbar if matching
     const curPlaying = audio.getCurrentTrack();
     if (curPlaying && curPlaying.id === track.id) {
       updatePlaybarHeartIcon(dbTrack.liked);
     }
     await reloadAppData();
   } else {
-    // 2. Track is not in database yet (procedural synth track, or iTunes stream)
     if (track.isSynth) {
-      // Create a dummy record in IndexedDB for synth track
       await saveTrack(null, track.title, track.artist, track.duration, null, track.id, true);
       
       const curPlaying = audio.getCurrentTrack();
@@ -1386,14 +1452,33 @@ async function toggleLikeTrack(track) {
         updatePlaybarHeartIcon(true);
       }
       await reloadAppData();
-    } else if (String(track.id).startsWith('preview-')) {
-      // Streaming preview track needs to be downloaded before liking!
-      alert('Liking this search preview song will save it offline automatically.');
-      
-      // Let's find the save button in DOM and trigger it!
-      const saveBtn = document.querySelector(`.search-download-btn[data-preview]`);
-      if (saveBtn) {
-        saveBtn.click();
+    } else if (String(track.id).startsWith('preview-') || String(track.id).startsWith('spotify-')) {
+      // Preview URLs can be downloaded
+      if (track.previewUrl) {
+        alert('Downloading file to save this track offline...');
+        try {
+          const proxiedUrl = `https://corsproxy.io/?${encodeURIComponent(track.previewUrl)}`;
+          const response = await fetch(proxiedUrl);
+          if (!response.ok) throw new Error('Audio fetch failed');
+          const blob = await response.blob();
+          
+          await saveTrack(blob, track.title, track.artist, track.duration, track.cover, track.id, true);
+          
+          const curPlaying = audio.getCurrentTrack();
+          if (curPlaying && curPlaying.id === track.id) {
+            updatePlaybarHeartIcon(true);
+          }
+          await reloadAppData();
+        } catch (err) {
+          console.error(err);
+          // If download fails, save just metadata as liked
+          await saveTrack(null, track.title, track.artist, track.duration, track.cover, track.id, true);
+          await reloadAppData();
+        }
+      } else {
+        // Just save metadata
+        await saveTrack(null, track.title, track.artist, track.duration, track.cover, track.id, true);
+        await reloadAppData();
       }
     }
   }
@@ -1411,9 +1496,8 @@ function updateRightPanelQueue() {
     return;
   }
 
-  // Find elements playing next
   const startIndex = audio.currentIndex + 1;
-  const nextUp = queue.slice(startIndex, startIndex + 8); // Display next 8 songs
+  const nextUp = queue.slice(startIndex, startIndex + 8);
 
   if (nextUp.length === 0) {
     DOM.rightPanelQueueContainer.innerHTML = `<div style="font-size:12px;color:var(--text-dim);text-align:center;padding:16px 0;">End of playback queue.</div>`;
@@ -1434,7 +1518,6 @@ function updateRightPanelQueue() {
     `;
 
     div.addEventListener('click', () => {
-      // Play this queue item
       audio.playIndex(startIndex + index);
     });
 
@@ -1542,7 +1625,7 @@ function setupSettingsBindings() {
   });
 }
 
-// 16. ITUNES ONLINE SEARCH & Sugggestions autocomplete
+// 16. ITUNES ONLINE SEARCH & Autocomplete
 function setupOnlineSearch() {
   if (!DOM.searchOnlineInput) return;
 
@@ -1610,12 +1693,10 @@ function setupOnlineSearch() {
     if (DOM.searchRecommendations) DOM.searchRecommendations.style.display = 'none';
   };
 
-  // Bind key inputs
   DOM.searchOnlineInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') performSearch();
   });
 
-  // Bind Recommendation Genre cards
   const genreCards = document.querySelectorAll('.genre-card');
   genreCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -1624,7 +1705,6 @@ function setupOnlineSearch() {
     });
   });
 
-  // Bind Recommendation Artist cards
   const artistCards = document.querySelectorAll('.artist-circle-card');
   artistCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -1633,7 +1713,6 @@ function setupOnlineSearch() {
     });
   });
 
-  // Autocomplete debounced suggestions
   const handleAutocomplete = debounce(async (val) => {
     const query = val.trim();
     if (!query) {
@@ -1664,7 +1743,6 @@ function setupOnlineSearch() {
     handleAutocomplete(e.target.value);
   });
 
-  // Hide suggestions dropdown on clicking outside
   document.addEventListener('click', (e) => {
     if (DOM.searchOnlineSuggestions && !e.target.closest('.search-bar-wrapper')) {
       DOM.searchOnlineSuggestions.style.display = 'none';
@@ -1698,7 +1776,6 @@ function renderSuggestions(results) {
       DOM.searchOnlineInput.value = `${track.trackName} ${track.artistName}`;
       DOM.searchOnlineSuggestions.style.display = 'none';
       
-      // Perform search directly
       const input = document.getElementById('search-online-input');
       const event = new KeyboardEvent('keypress', {'key': 'Enter'});
       input.dispatchEvent(event);
@@ -1740,7 +1817,6 @@ function renderOnlineResults(results) {
       </div>
     `;
 
-    // Stream preview clicks
     card.addEventListener('click', (e) => {
       if (e.target.closest('.search-download-btn') || e.target.closest('.plus-add-to-playlist')) return;
       
@@ -1767,7 +1843,6 @@ function renderOnlineResults(results) {
       if (audio.onPlayStateChange) audio.onPlayStateChange(true);
     });
 
-    // Save offline click action
     const downloadBtn = card.querySelector('.search-download-btn');
     downloadBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1810,7 +1885,6 @@ function renderOnlineResults(results) {
       }
     });
 
-    // Add to Playlist context menu trigger
     const addBtn = card.querySelector('.plus-add-to-playlist');
     addBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1823,7 +1897,6 @@ function renderOnlineResults(results) {
         cover: hiresArtwork
       };
       
-      // Check if this track exists in database. If so, use DB key instead of preview key
       getAllTracks().then(allTracks => {
         const dbTrack = allTracks.find(t => t.title === track.trackName && t.artist === track.artistName);
         if (dbTrack) {
@@ -1846,22 +1919,13 @@ function blobToBase64(blob) {
   });
 }
 
-// Play a specific track item (synths or downloaded tracks)
 async function playTrackItem(track) {
   const dbTracks = await getAllTracks();
-  
-  if (track.isSynth) {
-    const fullPlaylist = [...SYNTH_TRACKS, ...dbTracks];
-    audio.setPlaylist(fullPlaylist);
-    audio.playTrack(track);
-  } else {
-    const fullPlaylist = [...SYNTH_TRACKS, ...dbTracks];
-    audio.setPlaylist(fullPlaylist);
-    audio.playTrack(track);
-  }
+  const fullPlaylist = [...SYNTH_TRACKS, ...dbTracks];
+  audio.setPlaylist(fullPlaylist);
+  audio.playTrack(track);
 }
 
-// Debounce helper
 function debounce(func, delay) {
   let timeoutId;
   return function (...args) {
@@ -1870,7 +1934,132 @@ function debounce(func, delay) {
   };
 }
 
-// 17. UTILITIES
+// 17. SPOTIFY ACCOUNT SYNC UI LOGIC
+function setupSpotifyBindings() {
+  if (!DOM.spotifyClientIdInput) return;
+
+  DOM.spotifyClientIdInput.value = getSpotifyClientId();
+
+  DOM.spotifySaveClientIdBtn.addEventListener('click', () => {
+    const clientId = DOM.spotifyClientIdInput.value.trim();
+    if (clientId) {
+      setSpotifyClientId(clientId);
+      alert('Spotify Client ID saved. Redirecting to Spotify authorization page...');
+      window.location.href = getSpotifyLoginUrl();
+    } else {
+      alert('Please enter a valid Client ID.');
+    }
+  });
+
+  DOM.spotifyDisconnectBtn.addEventListener('click', () => {
+    logoutSpotify();
+    updateSpotifyUIState();
+    reloadAppData();
+  });
+
+  DOM.spotifySyncBtn.addEventListener('click', async () => {
+    DOM.spotifySyncBtn.disabled = true;
+    DOM.spotifySyncBtn.innerHTML = '<span class="spinner"></span> Syncing...';
+    
+    try {
+      await syncSpotifyData();
+      DOM.spotifySyncSuccessText.style.display = 'block';
+      setTimeout(() => {
+        DOM.spotifySyncSuccessText.style.display = 'none';
+      }, 3000);
+    } catch (err) {
+      alert('Failed to sync Spotify playlists. Your access token may have expired. Reconnecting...');
+      window.location.href = getSpotifyLoginUrl();
+    } finally {
+      DOM.spotifySyncBtn.disabled = false;
+      DOM.spotifySyncBtn.textContent = 'Sync Playlists Now';
+    }
+  });
+
+  updateSpotifyUIState();
+}
+
+function updateSpotifyUIState() {
+  if (isSpotifyConnected()) {
+    DOM.spotifyConnectForm.style.display = 'none';
+    DOM.spotifyConnectedStatus.style.display = 'block';
+    
+    fetchSpotifyProfile().then(profile => {
+      DOM.spotifyUsername.textContent = profile.display_name || profile.id;
+    }).catch(err => {
+      console.warn('Failed to fetch profile (token might be invalid/expired):', err);
+      logoutSpotify();
+      DOM.spotifyConnectForm.style.display = 'block';
+      DOM.spotifyConnectedStatus.style.display = 'none';
+    });
+  } else {
+    DOM.spotifyConnectForm.style.display = 'block';
+    DOM.spotifyConnectedStatus.style.display = 'none';
+  }
+}
+
+async function syncSpotifyData() {
+  if (!isSpotifyConnected()) return;
+  
+  try {
+    const spPlaylists = await fetchSpotifyPlaylists();
+    const allLocalTracks = await getAllTracks();
+    const allLocalPlaylists = await getAllPlaylists();
+    
+    // 1. Sync custom playlists
+    for (const spPlaylist of spPlaylists) {
+      let localPlaylist = allLocalPlaylists.find(p => p.isSpotify && p.spotifyId === spPlaylist.id);
+      
+      if (!localPlaylist) {
+        const newId = await createPlaylist(spPlaylist.name, spPlaylist.images?.[0]?.url || null);
+        localPlaylist = await getPlaylist(newId);
+        localPlaylist.isSpotify = true;
+        localPlaylist.spotifyId = spPlaylist.id;
+      } else {
+        localPlaylist.name = spPlaylist.name;
+        localPlaylist.cover = spPlaylist.images?.[0]?.url || null;
+      }
+      
+      const spTracks = await fetchSpotifyPlaylistTracks(spPlaylist.id);
+      const trackIdsList = [];
+      
+      for (const spTrack of spTracks) {
+        const dbTrack = allLocalTracks.find(t => t.id === spTrack.id);
+        
+        if (!dbTrack) {
+          await saveTrack(null, spTrack.title, spTrack.artist, spTrack.duration, spTrack.cover, spTrack.id, false);
+        }
+        trackIdsList.push(spTrack.id);
+      }
+      
+      localPlaylist.trackIds = trackIdsList;
+      await updatePlaylist(localPlaylist);
+    }
+    
+    // 2. Sync Liked Songs
+    const spLikedTracks = await fetchSpotifyLikedTracks();
+    for (const spTrack of spLikedTracks) {
+      const dbTrack = allLocalTracks.find(t => t.id === spTrack.id);
+      
+      if (!dbTrack) {
+        await saveTrack(null, spTrack.title, spTrack.artist, spTrack.duration, spTrack.cover, spTrack.id, true);
+      } else {
+        if (!dbTrack.liked) {
+          dbTrack.liked = true;
+          await updateTrack(dbTrack);
+        }
+      }
+    }
+    
+    await reloadAppData();
+    return true;
+  } catch (err) {
+    console.error('Error syncing Spotify playlists:', err);
+    throw err;
+  }
+}
+
+// 18. UTILITIES
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds === Infinity) return '0:00';
   const min = Math.floor(seconds / 60);
@@ -1888,7 +2077,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// 18. ACCESS CONTROL & PASSCODE GUEST LOCK LOGIC
+// 19. ACCESS CONTROL & PASSCODE GUEST LOCK LOGIC
 function checkAccessControl() {
   const isUnlocked = localStorage.getItem('spoptify_unlocked') === 'true';
   const urlParams = new URLSearchParams(window.location.search);
@@ -1966,7 +2155,7 @@ function setupAccessControlBindings() {
   }
 }
 
-// 19. PWA STANDALONE INSTALLATION MANAGEMENT
+// 20. PWA STANDALONE INSTALLATION MANAGEMENT
 let deferredPrompt = null;
 
 function setupPwaInstallation() {
@@ -2013,7 +2202,7 @@ function hideInstallButtons() {
   }
 }
 
-// 20. SERVICE WORKER CONTROL
+// 21. SERVICE WORKER CONTROL
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

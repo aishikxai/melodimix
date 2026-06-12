@@ -452,6 +452,41 @@
           </div>
 
           <div class="settings-group">
+            <h3>Spotify Account Sync</h3>
+            <p>Connect your free Spotify account to sync your playlists and liked songs. (Plays via iTunes previews or matching local files).</p>
+            <div class="info-card">
+              <div id="spotify-connect-form">
+                <div style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
+                  <label for="spotify-client-id-input" style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim);">Spotify Client ID</label>
+                  <input type="text" id="spotify-client-id-input" placeholder="Paste your Spotify Client ID here..." style="background-color: #282828; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 8px 12px; color: white; width: 100%; outline: none; font-family: var(--font-sans);">
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 16px; background-color: rgba(255,255,255,0.03); padding: 12px; border-radius: 4px;">
+                  <strong>How to get your free Client ID:</strong><br>
+                  1. Go to <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: var(--accent-color); text-decoration: underline;">developer.spotify.com/dashboard</a> and log in.<br>
+                  2. Click <strong>Create app</strong>. Name it "Spoptify".<br>
+                  3. In the app settings, add these Redirect URIs:
+                  <code style="display:block; background:#121212; padding:4px 8px; margin:4px 0; border-radius:2px; font-size:11px; font-family: monospace;">https://aishikxai.github.io/New-1/</code>
+                  <code style="display:block; background:#121212; padding:4px 8px; margin:4px 0; border-radius:2px; font-size:11px; font-family: monospace;">http://localhost:8000/</code>
+                  4. Save changes, open the app, and copy your <strong>Client ID</strong>.
+                </div>
+                <button id="spotify-save-client-id-btn" class="btn btn-primary btn-small">Save Client ID</button>
+              </div>
+
+              <div id="spotify-connected-status" style="display: none;">
+                <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 8px; height: 8px; background-color: #1db954; border-radius: 50%; box-shadow: 0 0 8px #1db954;"></div>
+                  <span>Connected as: <strong style="color: var(--accent-color);" id="spotify-username">Loading...</strong></span>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button id="spotify-sync-btn" class="btn btn-primary btn-small">Sync Playlists Now</button>
+                  <button id="spotify-disconnect-btn" class="btn btn-secondary btn-small">Disconnect</button>
+                </div>
+                <div id="spotify-sync-success-text" style="color: var(--accent-color); font-size: 13.5px; margin-top: 8px; display: none;">✓ Sync successful!</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
             <h3>App Installation</h3>
             <p>Install Spoptify as a standalone application on your mobile phone or PC for full screen playback and quick home screen access.</p>
             <div class="info-card">
