@@ -36,19 +36,19 @@ function initDB() {
   });
 }
 
-// Save or update track
-export async function saveTrack(file, title, artist, duration, coverBase64, customId = null, liked = false) {
+// Save or update track (stores binary Blobs offline)
+export async function saveTrack(file, title, artist, duration, coverUrl, customId = null, liked = false) {
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
 
     const track = {
-      file, // Blob of the audio file or null for synth/streaming
+      file: file || null, // Blob of the audio file or null
       title: title || 'Unknown Track',
       artist: artist || 'Unknown Artist',
       duration: duration || 0,
-      cover: coverBase64 || null,
+      cover: coverUrl || null,
       liked: !!liked,
       addedAt: Date.now()
     };

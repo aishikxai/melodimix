@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spoptify-cache-v6';
+const CACHE_NAME = 'spoptify-cache-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   './js/spotify.js',
   './js/audio.js',
   './js/db.js',
+  './js/resolver.js',
   './js/synth.js',
   './js/visualizer.js',
   './manifest.json',

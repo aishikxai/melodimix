@@ -1472,6 +1472,50 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
+/* DROP ZONE PREMIUM */
+.drop-zone-premium {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.25s ease;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.drop-zone-premium:hover, .drop-zone-premium.dragover {
+  border-color: var(--accent-color);
+  background: rgba(29, 185, 84, 0.05);
+  color: #ffffff;
+}
+
+.drop-zone-premium .upload-icon-svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  transition: transform 0.25s ease;
+}
+
+.drop-zone-premium:hover .upload-icon-svg {
+  transform: translateY(-2px);
+}
+
+.drop-zone-premium .browse-link {
+  color: var(--accent-color);
+  text-decoration: underline;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.drop-zone-premium .browse-link:hover {
+  color: #ffffff;
+}
+
 /* RIGHT COLLAPSIBLE PANEL (NOW PLAYING) */
 .right-panel {
   width: 340px;

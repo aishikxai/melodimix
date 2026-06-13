@@ -201,6 +201,14 @@ const DOM = {
   spotifySyncBtn: document.getElementById('spotify-sync-btn'),
   spotifyDisconnectBtn: document.getElementById('spotify-disconnect-btn'),
   spotifySyncSuccessText: document.getElementById('spotify-sync-success-text'),
+
+  // Local Files view details
+  localFilesView: document.getElementById('local-files-view'),
+  localTracksBody: document.getElementById('local-tracks-body'),
+  localDetailCount: document.getElementById('local-detail-count'),
+  localFilesPlayBtn: document.getElementById('local-files-play-btn'),
+  sidebarLocalFiles: document.getElementById('sidebar-local-files'),
+  sidebarLocalCount: document.getElementById('sidebar-local-count'),
 };
 
 // Global State
@@ -236,6 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupOnlineSearch();
   setupPlaylistDetailsActions();
   setupSpotifyBindings();
+  setupLocalFilesBindings();
 
   // Load custom database contents
   await reloadAppData();
@@ -251,12 +260,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function reloadAppData() {
   await loadPlaylists();
   await loadLikedSongsCount();
+  await loadLocalFilesCount();
   renderHomeView();
   
   if (currentView === 'liked-songs-view') {
     renderLikedSongsView();
   } else if (currentView === 'playlist-view' && currentPlaylistId !== null) {
     renderPlaylistView(currentPlaylistId);
+  } else if (currentView === 'local-files-view') {
+    renderLocalFilesView();
   }
 }
 
@@ -273,6 +285,12 @@ function setupRouting() {
   DOM.sidebarLikedSongs.addEventListener('click', () => {
     navigateToView('liked-songs-view');
   });
+
+  if (DOM.sidebarLocalFiles) {
+    DOM.sidebarLocalFiles.addEventListener('click', () => {
+      navigateToView('local-files-view');
+    });
+  }
 
   DOM.menuEqualizer.addEventListener('click', () => {
     navigateToView('equalizer-view');
@@ -348,6 +366,9 @@ function navigateToView(viewId, playlistId = null) {
   });
 
   DOM.sidebarLikedSongs.classList.toggle('active', viewId === 'liked-songs-view');
+  if (DOM.sidebarLocalFiles) {
+    DOM.sidebarLocalFiles.classList.toggle('active', viewId === 'local-files-view');
+  }
 
   if (viewId === 'search-view') {
     DOM.headerSearchBar.style.display = 'flex';
@@ -359,6 +380,8 @@ function navigateToView(viewId, playlistId = null) {
     renderPlaylistView(playlistId);
   } else if (viewId === 'liked-songs-view') {
     renderLikedSongsView();
+  } else if (viewId === 'local-files-view') {
+    renderLocalFilesView();
   } else if (viewId === 'home-view') {
     renderHomeView();
   }
@@ -453,6 +476,13 @@ function initVisualizer() {
 
 // 5. AUDIO ENGINE CALLBACK LISTENERS
 function setupAudioListeners() {
+  audio.onPlaybarBuffering = (isBuffering) => {
+    if (isBuffering) {
+      DOM.playbarTitle.innerHTML = '<span class="spinner" style="display:inline-block; margin-right:6px; vertical-align:middle;"></span> Buffering...';
+      DOM.playbarArtist.textContent = "Resolving online stream...";
+    }
+  };
+
   audio.onTrackChange = async (track) => {
     if (track) {
       const title = track.title;
@@ -1046,24 +1076,7 @@ async function renderPlaylistView(playlistId) {
 
       const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23181818"/><path d="M40 35l20 15-20 15z" fill="white"/></svg>';
       
-      // Spotify track row action button HTML
-      const isSpotifyTrack = String(track.id).startsWith('spotify-');
-      const hasFile = track.file !== null;
-      let actionBtnHtml = '';
-
-      if (isSpotifyTrack) {
-        if (hasFile) {
-          actionBtnHtml = `<span style="color:var(--accent-color); font-size:14px; margin-right:12px; font-weight:bold;" title="Saved offline">✓</span>`;
-        } else if (track.previewUrl) {
-          actionBtnHtml = `<button class="btn-icon-only spotify-download-row-btn" title="Download preview offline" data-track-id="${track.id}" style="margin-right:12px; color:var(--text-muted);">
-                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-                           </button>`;
-        } else {
-          actionBtnHtml = `<span style="color:var(--text-dim); font-size:11px; margin-right:12px;" title="No streaming preview available">No Link</span>`;
-        }
-      }
-
-      actionBtnHtml += `<button class="btn-icon-only remove-track-btn" title="Remove from playlist" data-track-id="${track.id}">
+      let actionBtnHtml = `<button class="btn-icon-only remove-track-btn" title="Remove from playlist" data-track-id="${track.id}">
                           <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19 13H5v-2h14v2z"/></svg>
                         </button>`;
 
@@ -1088,7 +1101,7 @@ async function renderPlaylistView(playlistId) {
 
       // Row playback clicks
       tr.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-track-btn') || e.target.closest('.spotify-download-row-btn')) return;
+        if (e.target.closest('.remove-track-btn')) return;
         audio.setPlaylist(playlistTracks);
         audio.playTrack(track);
       });
@@ -1103,16 +1116,6 @@ async function renderPlaylistView(playlistId) {
         await updatePlaylist(playlist);
         await reloadAppData();
       });
-
-      // Spotify download track binding
-      const spDownloadBtn = tr.querySelector('.spotify-download-row-btn');
-      if (spDownloadBtn) {
-        spDownloadBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const tid = e.currentTarget.getAttribute('data-track-id');
-          await downloadSpotifyTrack(tid, e.currentTarget);
-        });
-      }
 
       DOM.playlistTracksBody.appendChild(tr);
     });
@@ -1155,6 +1158,161 @@ async function downloadSpotifyTrack(trackId, downloadBtn) {
   }
 }
 
+function setupLocalFilesBindings() {
+  const dropZone = document.getElementById('local-drop-zone');
+  const fileInput = document.getElementById('local-file-input');
+  const browseTrigger = document.getElementById('local-browse-trigger');
+
+  if (browseTrigger && fileInput) {
+    browseTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        await importLocalFiles(e.target.files);
+      }
+    });
+  }
+
+  if (dropZone) {
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    // Highlight drop zone when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    // Handle dropped files
+    dropZone.addEventListener('drop', async (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        await importLocalFiles(files);
+      }
+    }, false);
+  }
+}
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+async function loadLocalFilesCount() {
+  const allTracks = await getAllTracks();
+  const localTracksCount = allTracks.filter(t => t.file !== null).length;
+  if (DOM.sidebarLocalCount) {
+    DOM.sidebarLocalCount.textContent = localTracksCount;
+  }
+  if (DOM.localDetailCount) {
+    DOM.localDetailCount.textContent = `${localTracksCount} songs`;
+  }
+}
+
+async function renderLocalFilesView() {
+  const allTracks = await getAllTracks();
+  const localTracks = allTracks.filter(t => t.file !== null);
+  
+  DOM.localTracksBody.innerHTML = '';
+  await loadLocalFilesCount();
+
+  if (localTracks.length === 0) {
+    DOM.localTracksBody.innerHTML = `
+      <tr class="empty-state">
+        <td colspan="5" style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+          <p>No local files imported yet. Drag & drop MP3s here or click browse to upload!</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  localTracks.forEach((track, index) => {
+    const tr = document.createElement('tr');
+    tr.className = 'playlist-row';
+    tr.setAttribute('data-id', track.id);
+    
+    const currentTrack = audio.getCurrentTrack();
+    if (currentTrack && currentTrack.id === track.id) {
+      tr.classList.add('playing');
+    }
+
+    const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23181818"/><circle cx="50" cy="50" r="15" fill="%23535353"/><path d="M45 40l18 10-18 10z" fill="white"/></svg>';
+
+    // Like button state
+    const isLiked = track.liked;
+    const heartIcon = isLiked 
+      ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--accent-color);"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
+      : `<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+
+    tr.innerHTML = `
+      <td class="track-num">${index + 1}</td>
+      <td>
+        <div class="track-title-cell-wrapper">
+          <div class="track-mini-art" style="background-image: url('${coverSrc}')"></div>
+          <div class="track-text-details">
+            <span class="track-title">${escapeHtml(track.title)}</span>
+          </div>
+        </div>
+      </td>
+      <td>${escapeHtml(track.artist)}</td>
+      <td>${formatTime(track.duration)}</td>
+      <td>
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap: 12px;">
+          <button class="btn-icon-only local-heart-btn" title="Like track" data-track-id="${track.id}">
+            ${heartIcon}
+          </button>
+          <button class="btn-icon-only local-delete-btn" title="Delete track" data-track-id="${track.id}" style="color: var(--text-dim);">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
+      </td>
+    `;
+
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('.local-heart-btn') || e.target.closest('.local-delete-btn')) return;
+      audio.setPlaylist(localTracks);
+      audio.playTrack(track);
+    });
+
+    tr.querySelector('.local-heart-btn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      track.liked = !track.liked;
+      await updateTrack(track);
+      await renderLocalFilesView();
+    });
+
+    tr.querySelector('.local-delete-btn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (confirm(`Are you sure you want to delete "${track.title}"?`)) {
+        await deleteTrack(track.id);
+        await reloadAppData();
+      }
+    });
+
+    DOM.localTracksBody.appendChild(tr);
+  });
+
+  DOM.localFilesPlayBtn.onclick = () => {
+    if (localTracks.length > 0) {
+      audio.setPlaylist(localTracks);
+      audio.playIndex(0);
+    }
+  };
+}
+
 // LIKED SONGS VIEW RENDERING
 async function renderLikedSongsView() {
   const allTracks = await getAllTracks();
@@ -1186,23 +1344,6 @@ async function renderLikedSongsView() {
 
     const coverSrc = track.cover || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23181818"/><path d="M40 35l20 15-20 15z" fill="white"/></svg>';
     
-    // Spotify track check
-    const isSpotifyTrack = String(track.id).startsWith('spotify-');
-    const hasFile = track.file !== null;
-    let actionBtnHtml = '';
-
-    if (isSpotifyTrack) {
-      if (hasFile) {
-        actionBtnHtml = `<span style="color:var(--accent-color); font-size:14px; margin-right:12px; font-weight:bold;" title="Saved offline">✓</span>`;
-      } else if (track.previewUrl) {
-        actionBtnHtml = `<button class="btn-icon-only spotify-download-row-btn" title="Download preview offline" data-track-id="${track.id}" style="margin-right:12px; color:var(--text-muted);">
-                           <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-                         </button>`;
-      } else {
-        actionBtnHtml = `<span style="color:var(--text-dim); font-size:11px; margin-right:12px;" title="No streaming preview available">No Link</span>`;
-      }
-    }
-
     tr.innerHTML = `
       <td class="track-num">${index + 1}</td>
       <td>
@@ -1217,7 +1358,6 @@ async function renderLikedSongsView() {
       <td>${formatTime(track.duration)}</td>
       <td>
         <div style="display:flex; align-items:center; justify-content:flex-end;">
-          ${actionBtnHtml}
           <button class="btn-icon-only playbar-heart-btn liked-page-heart" title="Unlike track" data-track-id="${track.id}">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--accent-color);"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
           </button>
@@ -1226,7 +1366,7 @@ async function renderLikedSongsView() {
     `;
 
     tr.addEventListener('click', (e) => {
-      if (e.target.closest('.liked-page-heart') || e.target.closest('.spotify-download-row-btn')) return;
+      if (e.target.closest('.liked-page-heart')) return;
       audio.setPlaylist(likedTracks);
       audio.playTrack(track);
     });
@@ -1243,15 +1383,6 @@ async function renderLikedSongsView() {
         await reloadAppData();
       }
     });
-
-    const spDownloadBtn = tr.querySelector('.spotify-download-row-btn');
-    if (spDownloadBtn) {
-      spDownloadBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const tid = e.currentTarget.getAttribute('data-track-id');
-        await downloadSpotifyTrack(tid, e.currentTarget);
-      });
-    }
 
     DOM.likedTracksBody.appendChild(tr);
   });
@@ -1803,14 +1934,11 @@ function renderOnlineResults(results) {
       <h3 class="track-card-title truncate" title="${escapeHtml(track.trackName)}">${escapeHtml(track.trackName)}</h3>
       <p class="track-card-artist truncate" title="${escapeHtml(track.artistName)}">${escapeHtml(track.artistName)}</p>
       
-      <button class="play-hover-btn" title="Stream Preview">
+      <button class="play-hover-btn" title="Stream song">
         <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       </button>
       
       <div class="search-track-btn-group">
-        <button class="search-download-btn" title="Save offline" data-preview="${track.previewUrl}" data-art="${hiresArtwork}">
-          <svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:currentColor;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg> Save
-        </button>
         <button class="search-play-btn plus-add-to-playlist" title="Add to Playlist">
           + Add
         </button>
@@ -1818,71 +1946,20 @@ function renderOnlineResults(results) {
     `;
 
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.search-download-btn') || e.target.closest('.plus-add-to-playlist')) return;
+      if (e.target.closest('.plus-add-to-playlist')) return;
       
-      const previewTrack = {
-        id: 'preview-' + track.trackId,
-        title: track.trackName + ' (Preview)',
+      const searchTrack = {
+        id: 'search-' + track.trackId,
+        title: track.trackName,
         artist: track.artistName,
         duration: durationSec,
         file: null,
         isSynth: false,
-        cover: hiresArtwork
+        cover: hiresArtwork,
+        previewUrl: track.previewUrl
       };
 
-      audio.initContext();
-      audio.stopCurrentMedia();
-      audio.isSynthPlaying = false;
-      audio.audioElement.src = track.previewUrl;
-      audio.isPlaying = true;
-      audio.audioElement.play().catch(err => console.error('Playback of preview failed:', err));
-      
-      audio.currentIndex = -1;
-      
-      if (audio.onTrackChange) audio.onTrackChange(previewTrack);
-      if (audio.onPlayStateChange) audio.onPlayStateChange(true);
-    });
-
-    const downloadBtn = card.querySelector('.search-download-btn');
-    downloadBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      
-      const previewUrl = downloadBtn.getAttribute('data-preview');
-      const artUrl = downloadBtn.getAttribute('data-art');
-
-      downloadBtn.disabled = true;
-      downloadBtn.classList.add('downloading');
-      downloadBtn.innerHTML = `<span class="spinner"></span>...`;
-
-      try {
-        const proxiedAudioUrl = `https://corsproxy.io/?${encodeURIComponent(previewUrl)}`;
-        const audioResponse = await fetch(proxiedAudioUrl);
-        if (!audioResponse.ok) throw new Error('Audio fetch failed');
-        const audioBlob = await audioResponse.blob();
-
-        let coverBase64 = null;
-        try {
-          const proxiedArtUrl = `https://corsproxy.io/?${encodeURIComponent(artUrl)}`;
-          const artResponse = await fetch(proxiedArtUrl);
-          const artBlob = await artResponse.blob();
-          coverBase64 = await blobToBase64(artBlob);
-        } catch (artErr) {
-          console.warn('Failed to fetch cover art via proxy:', artErr);
-        }
-
-        await saveTrack(audioBlob, track.trackName, track.artistName, durationSec, coverBase64);
-
-        downloadBtn.className = 'search-download-btn downloaded';
-        downloadBtn.innerHTML = `✓ Saved`;
-
-        await reloadAppData();
-      } catch (err) {
-        console.error('Failed to download track:', err);
-        downloadBtn.disabled = false;
-        downloadBtn.classList.remove('downloading');
-        downloadBtn.className = 'search-download-btn';
-        downloadBtn.innerHTML = `✗ Error`;
-      }
+      audio.playTrack(searchTrack);
     });
 
     const addBtn = card.querySelector('.plus-add-to-playlist');
@@ -1890,11 +1967,12 @@ function renderOnlineResults(results) {
       e.stopPropagation();
       const rect = addBtn.getBoundingClientRect();
       const trackObj = {
-        id: 'preview-' + track.trackId,
+        id: 'search-' + track.trackId,
         title: track.trackName,
         artist: track.artistName,
         duration: durationSec,
-        cover: hiresArtwork
+        cover: hiresArtwork,
+        previewUrl: track.previewUrl
       };
       
       getAllTracks().then(allTracks => {

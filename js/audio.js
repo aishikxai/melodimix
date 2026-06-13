@@ -1,4 +1,5 @@
 import { ProceduralSynth } from './synth.js';
+import { resolveFullTrackStream } from './resolver.js';
 
 export class AudioEngine {
   constructor() {
@@ -25,6 +26,7 @@ export class AudioEngine {
     this.onPlayStateChange = null;
     this.onProgressUpdate = null;
     this.onQueueUpdate = null;
+    this.onPlaybarBuffering = null;
 
     this.audioElement.crossOrigin = 'anonymous';
     this.initAudioListeners();
@@ -257,8 +259,25 @@ export class AudioEngine {
         URL.revokeObjectURL(this.audioElement.src);
       }
       
-      const fileUrl = URL.createObjectURL(track.file);
-      this.audioElement.src = fileUrl;
+      if (track.file) {
+        const fileUrl = URL.createObjectURL(track.file);
+        this.audioElement.src = fileUrl;
+      } else {
+        if (this.onPlaybarBuffering) {
+          this.onPlaybarBuffering(true);
+        }
+        try {
+          const resolvedUrl = await resolveFullTrackStream(track.title, track.artist, track.previewUrl || track.url);
+          this.audioElement.src = resolvedUrl;
+        } catch (err) {
+          console.error('Failed to resolve stream for track:', track, err);
+          this.audioElement.src = track.previewUrl || '';
+        } finally {
+          if (this.onPlaybarBuffering) {
+            this.onPlaybarBuffering(false);
+          }
+        }
+      }
       this.isPlaying = true;
       
       try {

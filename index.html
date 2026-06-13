@@ -81,6 +81,17 @@
             </div>
           </div>
 
+          <!-- Local Files Playlist Item -->
+          <div class="sidebar-lib-item" id="sidebar-local-files" data-target="local-files-view">
+            <div class="playlist-avatar-mini" style="background-color: #282828; color: var(--text-muted);">
+              <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+            </div>
+            <div class="lib-item-info">
+              <span class="lib-item-title">Local Files</span>
+              <span class="lib-item-subtitle">Folder • <span id="sidebar-local-count">0</span> tracks</span>
+            </div>
+          </div>
+
           <!-- Dynamic Playlists Render Area -->
           <div id="sidebar-playlists-list"></div>
         </div>
@@ -502,6 +513,58 @@
           <div class="settings-group">
             <h3>About Spoptify</h3>
             <p>Spoptify is a 100% client-side, offline Progressive Web App. All files and synthesis logic are processed fully in your web browser. Absolutely no user data, telemetry, or audio files are ever uploaded or shared. Safe, ad-free, and always available offline.</p>
+          </div>
+        </section>
+
+        <!-- 7. LOCAL FILES VIEW -->
+        <section id="local-files-view" class="view-panel">
+          <!-- Local Files Header -->
+          <div class="playlist-detail-header" style="background: linear-gradient(180deg, rgba(43, 59, 76, 0.4) 0%, rgba(18, 18, 18, 0) 100%);">
+            <div class="playlist-cover-wrapper">
+              <div class="liked-songs-big-avatar" style="background: linear-gradient(135deg, #4b6b8c, #2b3b4c); display: flex; align-items: center; justify-content: center;">
+                <svg viewBox="0 0 24 24" style="fill: #ffffff; width: 64px; height: 64px;"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+              </div>
+            </div>
+            <div class="playlist-header-meta">
+              <span class="meta-tag">PLAYLIST</span>
+              <h1 class="playlist-title-display">Local Files</h1>
+              <div class="meta-owner-row">
+                <span class="owner-name">Folder</span> • 
+                <span id="local-detail-count">0 songs</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls and Drag & Drop -->
+          <div class="playlist-controls-row" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <button class="spotify-play-circle-btn large" id="local-files-play-btn" title="Play Local Files">
+              <svg viewBox="0 0 24 24" class="play-icon"><path d="M8 5v14l11-7z"/></svg>
+              <svg viewBox="0 0 24 24" class="pause-icon" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            
+            <div id="local-drop-zone" class="drop-zone-premium">
+              <svg viewBox="0 0 24 24" class="upload-icon-svg"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+              <span>Drag & drop audio files or <span class="browse-link" id="local-browse-trigger">browse files</span></span>
+              <input type="file" id="local-file-input" multiple accept="audio/*" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Local Files Table -->
+          <div class="playlist-tracklist-container">
+            <table class="playlist-table">
+              <thead>
+                <tr>
+                  <th style="width: 5%">#</th>
+                  <th style="width: 50%">Title</th>
+                  <th style="width: 30%">Artist</th>
+                  <th style="width: 10%">Duration</th>
+                  <th style="width: 5%"></th>
+                </tr>
+              </thead>
+              <tbody id="local-tracks-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
           </div>
         </section>
       </div>
