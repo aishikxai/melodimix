@@ -132,6 +132,13 @@ export default function App() {
 
   // PWA beforeinstallprompt handler
   useEffect(() => {
+    // Check if the prompt was already captured globally before React loaded
+    if (window.deferredInstallPrompt) {
+      setDeferredPrompt(window.deferredInstallPrompt);
+      setIsInstallable(true);
+      console.log('Using pre-captured PWA install prompt');
+    }
+
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -139,13 +146,21 @@ export default function App() {
       console.log('beforeinstallprompt event fired and captured');
     };
 
+    const handlePromptReady = (e) => {
+      setDeferredPrompt(e.detail);
+      setIsInstallable(true);
+      console.log('PWA install prompt notification received');
+    };
+
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
       setIsInstallable(false);
+      window.deferredInstallPrompt = null;
       addToast('Melodix successfully installed as a standalone app!', 'success');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('installpromptready', handlePromptReady);
     window.addEventListener('appinstalled', handleAppInstalled);
 
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
@@ -154,19 +169,22 @@ export default function App() {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('installpromptready', handlePromptReady);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
+    const promptEvent = deferredPrompt || window.deferredInstallPrompt;
+    if (!promptEvent) {
       addToast('Melodix is already installed or not supported for installation.', 'info');
       return;
     }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
     console.log(`PWA installation outcome: ${outcome}`);
     setDeferredPrompt(null);
+    window.deferredInstallPrompt = null;
     setIsInstallable(false);
   };
 

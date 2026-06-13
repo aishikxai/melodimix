@@ -7,6 +7,16 @@
     <meta name="theme-color" content="#1DB954" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Melodix</title>
+    <script>
+      // Capture the PWA install prompt early before React loads
+      window.deferredInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredInstallPrompt = e;
+        window.dispatchEvent(new CustomEvent('installpromptready', { detail: e }));
+        console.log('Early PWA install prompt captured');
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
