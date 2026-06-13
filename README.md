@@ -50,3 +50,15 @@ Once started, open your web browser at:
 - **Library View**: Manage saved tracks, mark as liked (heart), delete entries, and organize into playlists.
 - **Playlist View**: Create, manage, and delete playlist groupings.
 - **Bottom Player Bar**: Fixed player containing seekable timeline progress slider, mute/volume control, shuffle/repeat, and album info.
+
+## Note on Deployment vs Local Run
+
+Melodix is designed to be **run locally** on your machine. 
+
+Since it uses a Python FastAPI backend to search YouTube (via `yt-dlp`), handle direct streaming redirects, save metadata to a local SQLite database, and download audio tracks, **it cannot be hosted on static hosting services like GitHub Pages** (which only serve static HTML, CSS, and JS, and cannot run Python code).
+
+### Running as a Standalone App:
+1. Double-click **`start.bat`** (Windows) or run `./start.sh` (macOS/Linux).
+2. Go to **`http://localhost:5173`** in your browser.
+3. Click the green **"Install Standalone App"** button at the bottom of the Left Sidebar. This will install Melodix as a native, borderless window on your computer!
+
