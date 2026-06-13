@@ -13,3 +13,14 @@ npm-debug.log*
 # Node packages (if any installed locally)
 node_modules/
 package-lock.json
+
+# Python cache & virtualenv
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# App-specific database and downloads
+database.db
+downloads/
+

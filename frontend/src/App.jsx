@@ -62,6 +62,10 @@ export default function App() {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [activeDropdownTrackId, setActiveDropdownTrackId] = useState(null);
 
+  // PWA Install States
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
   // Refs
   const audioRef = useRef(null);
 
@@ -125,6 +129,46 @@ export default function App() {
     fetchPlaylists();
     fetchDownloaded();
   }, []);
+
+  // PWA beforeinstallprompt handler
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+      console.log('beforeinstallprompt event fired and captured');
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+      addToast('Melodix successfully installed as a standalone app!', 'success');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setIsInstallable(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      addToast('Melodix is already installed or not supported for installation.', 'info');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA installation outcome: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   // Update playlist tracks whenever view changes
   useEffect(() => {
@@ -494,6 +538,13 @@ export default function App() {
               ))}
             </div>
           </div>
+
+          {isInstallable && (
+            <button className="install-app-btn" onClick={handleInstallClick}>
+              <Download size={18} />
+              <span>Install Standalone App</span>
+            </button>
+          )}
         </aside>
 
         {/* Main Content Pane */}
