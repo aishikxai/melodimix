@@ -23,15 +23,25 @@ Melodix requires **FFmpeg** to extract audio from YouTube videos and convert it 
 
 ## How to Run
 
-1. Navigate to the project root directory.
+### Windows:
+1. Double-click the **`start.bat`** file in the root directory, or run it in your terminal:
+   ```cmd
+   start.bat
+   ```
+This will automatically verify your Python and Node.js environment, install dependencies, and launch the backend and frontend servers.
+
+### macOS / Linux:
+1. Open your terminal in the project root.
 2. Grant execution permissions and run the start script:
    ```bash
    chmod +x start.sh
    ./start.sh
    ```
-3. Open the application in your web browser at:
-   - **Frontend**: [http://localhost:5173](http://localhost:5173)
-   - **Backend**: [http://localhost:8000](http://localhost:8000)
+
+### Accessing the App:
+Once started, open your web browser at:
+- **Frontend**: [http://localhost:5173](http://localhost:5173) (or click "Install Standalone App" from the left sidebar to install it!)
+- **Backend**: [http://localhost:8000](http://localhost:8000)
 
 ## Features Included
 
