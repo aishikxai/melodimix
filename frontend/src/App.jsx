@@ -25,7 +25,14 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8000/api';
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+  return 'http://localhost:8000/api';
+};
+
+const API_BASE = getApiBase();
 
 export default function App() {
   // Navigation View State

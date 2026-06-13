@@ -1,0 +1,35 @@
+services:
+  # Backend FastAPI Web Service
+  - type: web
+    name: melodix-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_PATH
+        value: /data/database.db
+      - key: DOWNLOADS_DIR
+        value: /data/downloads
+    disk:
+      name: melodix-data
+      mountPath: /data
+      sizeGB: 1
+
+  # Frontend Static Site
+  - type: web
+    name: melodix-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          name: melodix-backend
+          type: web
+          property: host
+        value: https://${value}/api
+    headers:
+      - path: /*
+        headers:
+          - key: Cache-Control
+            value: public, max-age=0, must-revalidate

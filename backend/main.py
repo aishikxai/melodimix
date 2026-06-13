@@ -19,10 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database Configuration
-DATABASE_FILE = "database.db"
+# Database and downloads directory configuration
+DATABASE_FILE = os.environ.get("DATABASE_PATH", "database.db")
 DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+DOWNLOADS_DIR = os.environ.get("DOWNLOADS_DIR", "downloads")
 
 # Database models
 class Track(SQLModel, table=True):
@@ -56,13 +58,13 @@ def get_session():
 @app.on_event("startup")
 def on_startup():
     init_db()
-    os.makedirs("downloads", exist_ok=True)
+    os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 # Helper function to background download track
 def download_track_task(youtube_id: str, title: str, artist: str, duration: int, thumbnail: str):
     try:
-        os.makedirs("downloads", exist_ok=True)
-        out_tmpl = os.path.join("downloads", f"{youtube_id}.%(ext)s")
+        os.makedirs(DOWNLOADS_DIR, exist_ok=True)
+        out_tmpl = os.path.join(DOWNLOADS_DIR, f"{youtube_id}.%(ext)s")
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': out_tmpl,
@@ -77,7 +79,7 @@ def download_track_task(youtube_id: str, title: str, artist: str, duration: int,
             ydl.download([youtube_id])
         
         # Verify file download and update DB record
-        expected_path = os.path.join("downloads", f"{youtube_id}.mp3")
+        expected_path = os.path.join(DOWNLOADS_DIR, f"{youtube_id}.mp3")
         if os.path.exists(expected_path):
             with Session(engine) as session:
                 track = session.get(Track, youtube_id)
